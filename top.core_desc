@@ -1,0 +1,47 @@
+import "rv_base/RV32I.core_desc"
+import "rv_base/RVM.core_desc"
+import "rv_base/RVC.core_desc"
+import "rv_base/RVD.core_desc"
+import "rv_base/RVF.core_desc"
+import "tum_exc.core_desc"
+
+Core RV32IMC provides RV32I, RV32IC, RV32M, Zicsr, TUM_Exc {
+    architectural_state {
+        XLEN = 32;
+        PRIV = 1;
+        CSR[0] = 15;
+        CSR[256] = 15;
+        CSR[768] = 15;
+        CSR[260] = 4294967295;
+        CSR[769] = 0x4014112D;
+        CSR[3088] = 3;
+    }
+}
+
+Core RV32IMCF provides RV32I, RV32IC, RV32M, RV32F, Zicsr, TUM_Exc {
+    architectural_state {
+        XLEN = 32;
+        FLEN = 32;
+
+        CSR[0] = 15;
+        CSR[256] = 15;
+        CSR[768] = 15;
+        CSR[260] = 4294967295;
+        CSR[769] = 0x4014112D;
+        CSR[3088] = 3;
+    }
+}
+
+Core RV32IMCFD provides RV32I, RV32IC, RV32M, RV32F, RV32D, Zicsr, TUM_Exc {
+    architectural_state {
+        XLEN = 32;
+        FLEN = 64;
+
+        CSR[0] = 15;
+        CSR[256] = 15;
+        CSR[768] = 15;
+        CSR[260] = 4294967295;
+        CSR[769] = 0x4014112D;
+        CSR[3088] = 3;
+    }
+}
