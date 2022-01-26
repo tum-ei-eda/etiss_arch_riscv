@@ -1,0 +1,4 @@
+*.pickle
+**/gen_model
+**/gen_output
+.vscode
