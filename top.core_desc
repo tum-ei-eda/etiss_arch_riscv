@@ -18,7 +18,7 @@ Core RV32IMC provides RV32I, RV32IC, RV32M, Zicsr, TUM_Exc {
     }
 }
 
-Core RV32IMCF provides RV32I, RV32IC, RV32M, RV32F, Zicsr, TUM_Exc {
+Core RV32IMCF provides RV32I, RV32IC, RV32M, RV32F, RV32FC, Zicsr, TUM_Exc {
     architectural_state {
         XLEN = 32;
         FLEN = 32;
@@ -32,7 +32,7 @@ Core RV32IMCF provides RV32I, RV32IC, RV32M, RV32F, Zicsr, TUM_Exc {
     }
 }
 
-Core RV32IMCFD provides RV32I, RV32IC, RV32M, RV32F, RV32D, Zicsr, TUM_Exc {
+Core RV32IMCFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zicsr, TUM_Exc {
     architectural_state {
         XLEN = 32;
         FLEN = 64;
