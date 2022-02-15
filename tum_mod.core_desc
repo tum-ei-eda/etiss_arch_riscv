@@ -1,0 +1,133 @@
+import "rv_base/RISCVBase.core_desc"
+import "rv_base/RV32I.core_desc"
+
+InstructionSet tum_ret extends RISCVBase {
+	instructions {
+        URET [[no_cont]] {
+            encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
+            behavior: {
+				CSR[3088] = 0;
+				CSR[0] ^= ((CSR[0] & 0x10) >> 4) ^ (CSR[0] & 0x01);
+				PC = CSR[65];
+				CSR[768] = CSR[0];
+				CSR[256] = CSR[0];
+			}
+        }
+
+        SRET [[no_cont]] {
+            encoding: 0b0001000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
+            behavior: {
+				CSR[3088] = (CSR[256] & 0x100) >> 8;
+				CSR[256] ^= (CSR[256] & 0x100);
+				CSR[256] ^= ((CSR[256] & 0x20) >> 4) ^ (CSR[256] & 0x2);
+				PC = CSR[321];
+				CSR[768]= CSR[256];
+				CSR[0]=CSR[256];
+			}
+        }
+
+        MRET [[no_cont]] {
+            encoding: 0b0011000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
+            behavior: {
+				CSR[3088] = (CSR[768] & 0x1800) >> 11;
+				CSR[768] ^= (CSR[768] & 0x1800);
+				CSR[768] ^= ((CSR[768] & 0x80) >> 4) ^ (CSR[768] & 0x8);
+				PC = CSR[833];
+				CSR[0] = CSR[768];
+				CSR[256] = CSR[768];
+			}
+        }
+	}
+}
+
+InstructionSet tum_csr extends Zicsr {
+    architectural_state {
+        unsigned int FFLAGS_N = 0x001;
+        unsigned int FRM_N = 0x002;
+        unsigned int FCSR_N = 0x003;
+    }
+
+    functions {
+        unsigned<XLEN> csr_read(unsigned int csr) {
+            if (csr == FFLAGS_N) return CSR[FCSR_N] & 0x1F;
+            if (csr == FRM_N) return (CSR[FCSR_N] >> 5) & 0x03;
+            return CSR[csr];
+        }
+
+        void csr_write(unsigned int csr, unsigned<XLEN> val) {
+            if (csr == FFLAGS_N) CSR[FCSR_N] = val & 0x1F;
+            else if(csr == FRM_N) CSR[FCSR_N] = (val & 0x03) << 5;
+            else CSR[csr] = val;
+        }
+    }
+
+    instructions {
+        CSRRW {
+            encoding: csr[11:0] :: rs1[4:0] :: 0b001 :: rd[4:0] :: 0b1110011;
+            args_disass:"{name(rd)}, {csr}, {name(rs1)}";
+            behavior: {
+                unsigned<XLEN> xrs1 = X[rs1];
+                if (rd != 0) {
+                    unsigned<XLEN> xrd = csr_read(csr);
+                    csr_write(csr, xrs1);
+                    // make sure Xrd is updated once CSR write succeeds
+                    X[rd] = xrd;
+                } else {
+                    csr_write(csr, xrs1);
+                }
+            }
+        }
+
+        CSRRS {
+            encoding: csr[11:0] :: rs1[4:0] :: 0b010 :: rd[4:0] :: 0b1110011;
+            args_disass:"{name(rd)}, {csr}, {name(rs1)}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                unsigned<XLEN> xrs1 = X[rs1];
+                if (rs1 != 0) csr_write(csr, xrd | xrs1);
+                if (rd != 0) X[rd] = xrd;
+            }
+        }
+
+        CSRRC {
+            encoding: csr[11:0] :: rs1[4:0] :: 0b011 :: rd[4:0] :: 0b1110011;
+            args_disass:"{name(rd)}, {csr}, {name(rs1)}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                unsigned<XLEN> xrs1 = X[rs1];
+                if (rs1 != 0) csr_write(csr, xrd & ~xrs1);
+                if (rd != 0) X[rd] = xrd;
+            }
+        }
+
+        CSRRWI {
+            encoding: csr[11:0] :: zimm[4:0] :: 0b101 :: rd[4:0] :: 0b1110011;
+            args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                csr_write(csr, (unsigned<XLEN>)zimm);
+                if (rd != 0) X[rd] = xrd;
+            }
+        }
+
+        CSRRSI {
+            encoding: csr[11:0] :: zimm[4:0] :: 0b110 :: rd[4:0] :: 0b1110011;
+            args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                if (zimm != 0) csr_write(csr, xrd | (unsigned<XLEN>)zimm);
+                if (rd != 0) X[rd] = xrd;
+            }
+        }
+
+        CSRRCI {
+            encoding: csr[11:0] :: zimm[4:0] :: 0b111 :: rd[4:0] :: 0b1110011;
+            args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                if (zimm != 0) csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
+                if (rd != 0) X[rd] = xrd;
+            }
+        }
+    }
+}
