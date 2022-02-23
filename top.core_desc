@@ -12,12 +12,17 @@ Core RV32IMCFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, tum_
         XLEN = 32;
         FLEN = 64;
 
-        CSR[0] = 15;
-        CSR[256] = 15;
-        CSR[768] = 15;
-        CSR[260] = 4294967295;
-        CSR[769] = 0x4014112D;
-        CSR[3088] = 3;
+        CSR[0x000] = 0x0000000B; // ustatus
+        CSR[0x100] = 0x0000000B; // sstatus
+        CSR[0x300] = 0x0000000B; // mstatus
+
+        CSR[0x301] = 0x4014112D; // misa
+
+        CSR[0xC10] = 0x00000003;
+
+        CSR[0x304] = 0xFFFFFBBB; // mie
+        CSR[0x104] = CSR[0x304] & (~(0x888)); // sie
+        CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
     }
 }
 
