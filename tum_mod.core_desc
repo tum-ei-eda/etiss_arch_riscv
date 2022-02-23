@@ -50,13 +50,14 @@ InstructionSet tum_csr extends Zicsr {
     functions {
         unsigned<XLEN> csr_read(unsigned int csr) {
             if (csr == FFLAGS_N) return CSR[FCSR_N] & 0x1F;
-            if (csr == FRM_N) return (CSR[FCSR_N] >> 5) & 0x03;
+            if (csr == FRM_N) return (CSR[FCSR_N] >> 5) & 0x07;
             return CSR[csr];
         }
 
         void csr_write(unsigned int csr, unsigned<XLEN> val) {
-            if (csr == FFLAGS_N) CSR[FCSR_N] = val & 0x1F;
-            else if(csr == FRM_N) CSR[FCSR_N] = (val & 0x03) << 5;
+            if (csr == FFLAGS_N) CSR[FCSR_N] = (CSR[FCSR_N] & (0x07 << 5)) | (val & 0x1F);
+            else if (csr == FRM_N) CSR[FCSR_N] = ((val & 0x07) << 5) | (CSR[FCSR_N] & 0x1F);
+            else if (csr == FCSR_N) CSR[FCSR_N] = val & 0xFF;
             else CSR[csr] = val;
         }
     }
