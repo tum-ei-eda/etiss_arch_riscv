@@ -1,5 +1,6 @@
 import "rv_base/RISCVBase.core_desc"
 import "rv_base/RV32I.core_desc"
+import "rv_base/RVA.core_desc"
 
 InstructionSet tum_ret extends RISCVBase {
 	instructions {
@@ -129,6 +130,22 @@ InstructionSet tum_csr extends Zicsr {
                 if (zimm != 0) csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
                 if (rd != 0) X[rd] = xrd;
             }
+        }
+    }
+}
+
+InstructionSet tum_rva extends RV32A {
+    instructions {
+        LRW {
+            encoding: 0b00010 :: aq[0:0] :: rl[0:0] :: 0b00000 :: rs1[4:0] :: 0b010 :: rd[4:0] :: 0b0101111;
+            args_disass: "{name(rd)}, {name(rs1)}, {name(aq)}, {name(rl)}";
+            behavior: raise(0, 2);
+        }
+
+        SCW {
+            encoding: 0b00011 :: aq[0:0] :: rl[0:0] :: rs2[4:0] :: rs1[4:0] :: 0b010 :: rd[4:0] :: 0b0101111;
+            args_disass: "{name(rd)}, {name(rs1)}, {name(rs2)}, {name(aq)}, {name(rl)}";
+            behavior: raise(0, 2);
         }
     }
 }
