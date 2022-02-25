@@ -7,7 +7,7 @@ import "rv_base/RVF.core_desc"
 import "tum_mod.core_desc"
 
 
-Core RV32IMCFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, tum_csr, tum_ret {
+Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, tum_csr, tum_ret, tum_rva {
     architectural_state {
         XLEN = 32;
         FLEN = 64;
