@@ -135,17 +135,31 @@ InstructionSet tum_csr extends Zicsr {
 }
 
 InstructionSet tum_rva extends RV32A {
+    architectural_state {
+        register unsigned<XLEN> RES_ADDR = -1;
+    }
+
     instructions {
         LRW {
             encoding: 0b00010 :: aq[0:0] :: rl[0:0] :: 0b00000 :: rs1[4:0] :: 0b010 :: rd[4:0] :: 0b0101111;
             args_disass: "{name(rd)}, {name(rs1)}, {name(aq)}, {name(rl)}";
-            behavior: raise(0, 2);
+            behavior: {
+                unsigned<XLEN> offs = X[rs1];
+                signed<32> res = (signed<32>)MEM[offs];
+                RES_ADDR = offs;
+                if (rd) X[rd] = (signed<XLEN>)res;
+            }
         }
 
         SCW {
             encoding: 0b00011 :: aq[0:0] :: rl[0:0] :: rs2[4:0] :: rs1[4:0] :: 0b010 :: rd[4:0] :: 0b0101111;
             args_disass: "{name(rd)}, {name(rs1)}, {name(rs2)}, {name(aq)}, {name(rl)}";
-            behavior: raise(0, 2);
+            behavior: {
+                unsigned<XLEN> offs = X[rs1];
+                if (RES_ADDR == offs) MEM[offs] = (signed<32>)X[rs2];
+                if (rd) X[rd] = RES_ADDR != offs;
+                RES_ADDR = -1;
+            }
         }
     }
 }
