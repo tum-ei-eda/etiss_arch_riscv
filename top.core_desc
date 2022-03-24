@@ -26,7 +26,7 @@ Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zif
     }
 }
 
-Core RV64IM provides RV64I, RV32M, tum_csr, tum_ret {
+Core RV64IM provides RV64I, RV32M, tum_csr, tum_ret, tum_mem {
     architectural_state {
         XLEN = 64;
 
