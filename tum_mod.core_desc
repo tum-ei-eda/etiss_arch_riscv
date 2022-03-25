@@ -47,20 +47,27 @@ InstructionSet tum_csr extends Zicsr {
         unsigned int FFLAGS_N = 0x001;
         unsigned int FRM_N = 0x002;
         unsigned int FCSR_N = 0x003;
+        unsigned int SATP = 0x180;
+        signed<32> ret = 0;
     }
 
     functions {
+        // black-box function to communicate SATP-changes to MMU
+        extern signed<32> ETISS_SIGNAL_MMU(unsigned<XLEN> mmu_signal_) [[etiss_needs_arch]];
+
         unsigned<XLEN> csr_read(unsigned int csr) {
             if (csr == FFLAGS_N) return CSR[FCSR_N] & 0x1F;
             if (csr == FRM_N) return (CSR[FCSR_N] >> 5) & 0x07;
             return CSR[csr];
         }
 
-        void csr_write(unsigned int csr, unsigned<XLEN> val) {
+        signed<32> csr_write(unsigned int csr, unsigned<XLEN> val) {
             if (csr == FFLAGS_N) CSR[FCSR_N] = (CSR[FCSR_N] & (0x07 << 5)) | (val & 0x1F);
             else if (csr == FRM_N) CSR[FCSR_N] = ((val & 0x07) << 5) | (CSR[FCSR_N] & 0x1F);
             else if (csr == FCSR_N) CSR[FCSR_N] = val & 0xFF;
             else CSR[csr] = val;
+            if (csr == SATP) return ETISS_SIGNAL_MMU(val);
+            return 0;
         }
     }
 
@@ -69,15 +76,10 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: rs1[4:0] :: 0b001 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
                 unsigned<XLEN> xrs1 = X[rs1];
-                if (rd != 0) {
-                    unsigned<XLEN> xrd = csr_read(csr);
-                    csr_write(csr, xrs1);
-                    // make sure Xrd is updated once CSR write succeeds
-                    X[rd] = xrd;
-                } else {
-                    csr_write(csr, xrs1);
-                }
+                ret = csr_write(csr, xrs1);
+                if (rd != 0) X[rd] = xrd;
             }
         }
 
@@ -87,7 +89,7 @@ InstructionSet tum_csr extends Zicsr {
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
                 unsigned<XLEN> xrs1 = X[rs1];
-                if (rs1 != 0) csr_write(csr, xrd | xrs1);
+                if (rs1 != 0) ret = csr_write(csr, xrd | xrs1);
                 if (rd != 0) X[rd] = xrd;
             }
         }
@@ -98,7 +100,7 @@ InstructionSet tum_csr extends Zicsr {
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
                 unsigned<XLEN> xrs1 = X[rs1];
-                if (rs1 != 0) csr_write(csr, xrd & ~xrs1);
+                if (rs1 != 0) ret = csr_write(csr, xrd & ~xrs1);
                 if (rd != 0) X[rd] = xrd;
             }
         }
@@ -108,7 +110,7 @@ InstructionSet tum_csr extends Zicsr {
             args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
-                csr_write(csr, (unsigned<XLEN>)zimm);
+                ret = csr_write(csr, (unsigned<XLEN>)zimm);
                 if (rd != 0) X[rd] = xrd;
             }
         }
@@ -118,7 +120,7 @@ InstructionSet tum_csr extends Zicsr {
             args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
-                if (zimm != 0) csr_write(csr, xrd | (unsigned<XLEN>)zimm);
+                if (zimm != 0) ret = csr_write(csr, xrd | (unsigned<XLEN>)zimm);
                 if (rd != 0) X[rd] = xrd;
             }
         }
@@ -128,7 +130,7 @@ InstructionSet tum_csr extends Zicsr {
             args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
-                if (zimm != 0) csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
+                if (zimm != 0) ret = csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
                 if (rd != 0) X[rd] = xrd;
             }
         }
