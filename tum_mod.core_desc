@@ -4,11 +4,20 @@ import "rv_base/RVA.core_desc"
 import "rv_base/RV64I.core_desc"
 
 InstructionSet tum_ret extends RISCVBase {
+    architectural_state {
+        signed<32> ret = 0;
+    }
+
 	instructions {
         URET [[no_cont]] {
             encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-				CSR[3088] = 0;
+                // priviledge change indicates context-switch
+                if (CSR[3088] != 0) {
+                    CSR[3088] = 0;
+                    // prepare return-value for mmu-plugin
+                    ret = -2;
+                }
 				CSR[0] ^= ((CSR[0] & 0x10) >> 4) ^ (CSR[0] & 0x01);
 				PC = CSR[65];
 				CSR[768] = CSR[0];
@@ -19,7 +28,12 @@ InstructionSet tum_ret extends RISCVBase {
         SRET [[no_cont]] {
             encoding: 0b0001000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-				CSR[3088] = (CSR[256] & 0x100) >> 8;
+                // priviledge change indicates context-switch
+				if (CSR[3088] != (CSR[256] & 0x100) >> 8) {
+                    CSR[3088] = (CSR[256] & 0x100) >> 8;
+                    // prepare return-value for mmu-plugin
+                    ret = -2;
+                }
 				CSR[256] ^= (CSR[256] & 0x100);
 				CSR[256] ^= ((CSR[256] & 0x20) >> 4) ^ (CSR[256] & 0x2);
 				PC = CSR[321];
@@ -31,7 +45,12 @@ InstructionSet tum_ret extends RISCVBase {
         MRET [[no_cont]] {
             encoding: 0b0011000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-				CSR[3088] = (CSR[768] & 0x1800) >> 11;
+                // priviledge change indicates context-switch
+				if (CSR[3088] != (CSR[768] & 0x1800) >> 11) {
+                    CSR[3088] = (CSR[768] & 0x1800) >> 11;
+                    // prepare return-value for mmu-plugin
+                    ret = -2;
+                }
 				CSR[768] ^= (CSR[768] & 0x1800);
 				CSR[768] ^= ((CSR[768] & 0x80) >> 4) ^ (CSR[768] & 0x8);
 				PC = CSR[833];
@@ -66,6 +85,7 @@ InstructionSet tum_csr extends Zicsr {
             else if (csr == FRM_N) CSR[FCSR_N] = ((val & 0x07) << 5) | (CSR[FCSR_N] & 0x1F);
             else if (csr == FCSR_N) CSR[FCSR_N] = val & 0xFF;
             else CSR[csr] = val;
+            // evaluate if changes have been made to SATP
             if (csr == SATP) return ETISS_SIGNAL_MMU(val);
             return 0;
         }
