@@ -4,7 +4,7 @@ import "rv_base/RVA.core_desc"
 
 InstructionSet tum_ret extends RISCVBase {
     architectural_state {
-        signed<32> ret = 0;
+        signed<32> ret;
     }
 
 	instructions {
@@ -12,6 +12,7 @@ InstructionSet tum_ret extends RISCVBase {
             encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
                 // priviledge change indicates context-switch
+                ret = 0;
                 if (CSR[3088] != 0) {
                     CSR[3088] = 0;
                     // prepare return-value for mmu-plugin
@@ -28,6 +29,7 @@ InstructionSet tum_ret extends RISCVBase {
             encoding: 0b0001000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
                 // priviledge change indicates context-switch
+                ret = 0;
 				if (CSR[3088] != (CSR[256] & 0x100) >> 8) {
                     CSR[3088] = (CSR[256] & 0x100) >> 8;
                     // prepare return-value for mmu-plugin
@@ -45,6 +47,7 @@ InstructionSet tum_ret extends RISCVBase {
             encoding: 0b0011000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
                 // priviledge change indicates context-switch
+                ret = 0;
 				if (CSR[3088] != (CSR[768] & 0x1800) >> 11) {
                     CSR[3088] = (CSR[768] & 0x1800) >> 11;
                     // prepare return-value for mmu-plugin
