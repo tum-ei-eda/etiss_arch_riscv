@@ -3,16 +3,12 @@ import "rv_base/RV32I.core_desc"
 import "rv_base/RVA.core_desc"
 
 InstructionSet tum_ret extends RISCVBase {
-    architectural_state {
-        signed<32> ret;
-    }
-
 	instructions {
         URET [[no_cont]] {
             encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
                 // priviledge change indicates context-switch
-                ret = 0;
+                signed<32> ret = 0; // maybe use exception instead of ret, since codegen appends: return exception
                 if (CSR[3088] != 0) {
                     CSR[3088] = 0;
                     // prepare return-value for mmu-plugin
@@ -29,7 +25,7 @@ InstructionSet tum_ret extends RISCVBase {
             encoding: 0b0001000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
                 // priviledge change indicates context-switch
-                ret = 0;
+                signed<32> ret = 0;
 				if (CSR[3088] != (CSR[256] & 0x100) >> 8) {
                     CSR[3088] = (CSR[256] & 0x100) >> 8;
                     // prepare return-value for mmu-plugin
@@ -47,7 +43,7 @@ InstructionSet tum_ret extends RISCVBase {
             encoding: 0b0011000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
                 // priviledge change indicates context-switch
-                ret = 0;
+                signed<32> ret = 0;
 				if (CSR[3088] != (CSR[768] & 0x1800) >> 11) {
                     CSR[3088] = (CSR[768] & 0x1800) >> 11;
                     // prepare return-value for mmu-plugin
@@ -69,7 +65,6 @@ InstructionSet tum_csr extends Zicsr {
         unsigned int FRM_N = 0x002;
         unsigned int FCSR_N = 0x003;
         unsigned int SATP = 0x180;
-        // signed<32> ret = 0;
     }
 
     functions {
@@ -98,6 +93,7 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: rs1[4:0] :: 0b001 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
+                signed<32> ret = 0;
                 unsigned<XLEN> xrd = csr_read(csr);
                 unsigned<XLEN> xrs1 = X[rs1];
                 ret = csr_write(csr, xrs1);
@@ -109,6 +105,7 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: rs1[4:0] :: 0b010 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
+                signed<32> ret = 0;
                 unsigned<XLEN> xrd = csr_read(csr);
                 unsigned<XLEN> xrs1 = X[rs1];
                 if (rs1 != 0) ret = csr_write(csr, xrd | xrs1);
@@ -120,6 +117,7 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: rs1[4:0] :: 0b011 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
+                signed<32> ret = 0;
                 unsigned<XLEN> xrd = csr_read(csr);
                 unsigned<XLEN> xrs1 = X[rs1];
                 if (rs1 != 0) ret = csr_write(csr, xrd & ~xrs1);
@@ -131,6 +129,7 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: zimm[4:0] :: 0b101 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
             behavior: {
+                signed<32> ret = 0;
                 unsigned<XLEN> xrd = csr_read(csr);
                 ret = csr_write(csr, (unsigned<XLEN>)zimm);
                 if (rd != 0) X[rd] = xrd;
@@ -141,6 +140,7 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: zimm[4:0] :: 0b110 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
             behavior: {
+                signed<32> ret = 0;
                 unsigned<XLEN> xrd = csr_read(csr);
                 if (zimm != 0) ret = csr_write(csr, xrd | (unsigned<XLEN>)zimm);
                 if (rd != 0) X[rd] = xrd;
@@ -151,6 +151,7 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: zimm[4:0] :: 0b111 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {zimm:#0x}";
             behavior: {
+                signed<32> ret = 0;
                 unsigned<XLEN> xrd = csr_read(csr);
                 if (zimm != 0) ret = csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
                 if (rd != 0) X[rd] = xrd;
