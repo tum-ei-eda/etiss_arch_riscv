@@ -189,3 +189,29 @@ InstructionSet tum_rva extends RV32A {
         }
     }
 }
+
+
+InstructionSet tum_sfence {
+    functions {
+        // black-box function to communicate TLB-flushes to MMU
+        extern signed<32> ETISS_TLB_FLUSH() [[etiss_needs_arch]];
+
+        signed<32> flush_tlb(unsigned<XLEN> vaddr, unsigned<XLEN> asid) {
+            return ETISS_TLB_FLUSH();
+        }
+    }
+
+    instructions {
+        SFENCE_VMA {
+            encoding: 0b0001001 :: rs2[4:0] :: rs1[4:0] :: 0b000 :: 0b00000 :: 0b1110011;
+            args_disass: "{name(rs1)}, {name(rs2)}";
+            behavior: {
+                FENCE[2] = rs1;
+                FENCE[3] = rs2;
+                unsigned<XLEN> vaddr = X[rs1];
+                unsigned<XLEN> asid = X[rs2];
+                signed<32> ret = flush_tlb(vaddr, asid);
+            }
+        }
+    }
+}
