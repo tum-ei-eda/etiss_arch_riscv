@@ -188,11 +188,26 @@ InstructionSet tum_rva extends RV32A {
 
 InstructionSet tum_sfence {
     functions {
-        // black-box function to communicate TLB-flushes to MMU
+        // black-box function to evict all addresses from all asids
         extern signed<32> ETISS_TLB_FLUSH() [[etiss_needs_arch]];
 
-        signed<32> flush_tlb(unsigned<XLEN> vaddr, unsigned<XLEN> asid) {
-            return ETISS_TLB_FLUSH();
+        // black-box function to evict given address from all asids
+        extern signed<32> ETISS_TLB_EVICT_VMA(unsigned<XLEN> vma_) [[etiss_needs_arch]];
+
+        signed<32> evict_all() {
+            return ETISS_TLB_FLUSH();   // evicts all addresses from all asids
+        }
+
+        signed<32> evict_asid(unsigned<XLEN> asid) {
+            return ETISS_TLB_FLUSH();   // TODO: should only evict all addresses with given asid
+        }
+
+        signed<32> evict_addr(unsigned<XLEN> vaddr) {
+            return ETISS_TLB_EVICT_VMA(vaddr);  // evicts given address from all asids
+        }
+
+        signed<32> evict_addr_asid(unsigned<XLEN> vaddr, unsigned<XLEN> asid) {
+            return ETISS_TLB_FLUSH();   // TODO: should only evict given address in given asid
         }
     }
 
@@ -201,11 +216,19 @@ InstructionSet tum_sfence {
             encoding: 0b0001001 :: rs2[4:0] :: rs1[4:0] :: 0b000 :: 0b00000 :: 0b1110011;
             args_disass: "{name(rs1)}, {name(rs2)}";
             behavior: {
+                signed<32> ret = 0;
                 FENCE[2] = rs1;
                 FENCE[3] = rs2;
                 unsigned<XLEN> vaddr = X[rs1];
                 unsigned<XLEN> asid = X[rs2];
-                signed<32> ret = flush_tlb(vaddr, asid);
+                if (rs1 == 0) {
+                    if (rs2 == 0) ret = evict_all();
+                    else ret = evict_asid(asid);
+                }
+                else {
+                    if (rs2 == 0) ret = evict_addr(vaddr);
+                    else ret = evict_addr_asid(vaddr, asid);
+                }
             }
         }
     }
