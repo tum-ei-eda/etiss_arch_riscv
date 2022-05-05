@@ -7,7 +7,13 @@ InstructionSet tum_ret extends RISCVBase {
         URET [[no_cont]] {
             encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-				CSR[3088] = 0;
+                // privilege change indicates context-switch
+                signed<32> ret = 0; // maybe use exception instead of ret, since codegen appends: return exception
+                if (CSR[3088] != 0) {
+                    CSR[3088] = 0;
+                    // prepare return-value for mmu-plugin
+                    ret = -2;
+                }
 				CSR[0] ^= ((CSR[0] & 0x10) >> 4) ^ (CSR[0] & 0x01);
 				PC = CSR[65];
 				CSR[768] = CSR[0];
@@ -18,7 +24,13 @@ InstructionSet tum_ret extends RISCVBase {
         SRET [[no_cont]] {
             encoding: 0b0001000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-				CSR[3088] = (CSR[256] & 0x100) >> 8;
+                // privilege change indicates context-switch
+                signed<32> ret = 0;
+				if (CSR[3088] != (CSR[256] & 0x100) >> 8) {
+                    CSR[3088] = (CSR[256] & 0x100) >> 8;
+                    // prepare return-value for mmu-plugin
+                    ret = -2;
+                }
 				CSR[256] ^= (CSR[256] & 0x100);
 				CSR[256] ^= ((CSR[256] & 0x20) >> 4) ^ (CSR[256] & 0x2);
 				PC = CSR[321];
@@ -30,7 +42,13 @@ InstructionSet tum_ret extends RISCVBase {
         MRET [[no_cont]] {
             encoding: 0b0011000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-				CSR[3088] = (CSR[768] & 0x1800) >> 11;
+                // privilege change indicates context-switch
+                signed<32> ret = 0;
+				if (CSR[3088] != (CSR[768] & 0x1800) >> 11) {
+                    CSR[3088] = (CSR[768] & 0x1800) >> 11;
+                    // prepare return-value for mmu-plugin
+                    ret = -2;
+                }
 				CSR[768] ^= (CSR[768] & 0x1800);
 				CSR[768] ^= ((CSR[768] & 0x80) >> 4) ^ (CSR[768] & 0x8);
 				PC = CSR[833];
@@ -46,9 +64,13 @@ InstructionSet tum_csr extends Zicsr {
         unsigned int FFLAGS_N = 0x001;
         unsigned int FRM_N = 0x002;
         unsigned int FCSR_N = 0x003;
+        unsigned int SATP = 0x180;
     }
 
     functions {
+        // black-box function to communicate SATP-changes to MMU
+        extern signed<32> ETISS_SIGNAL_MMU(unsigned<XLEN> mmu_signal_) [[etiss_needs_arch]];
+
         unsigned<XLEN> csr_read(unsigned int csr) {
             if (csr == FFLAGS_N) return CSR[FCSR_N] & 0x1F;
             if (csr == FRM_N) return (CSR[FCSR_N] >> 5) & 0x07;
@@ -59,6 +81,11 @@ InstructionSet tum_csr extends Zicsr {
             if (csr == FFLAGS_N) CSR[FCSR_N] = (CSR[FCSR_N] & (0x07 << 5)) | (val & 0x1F);
             else if (csr == FRM_N) CSR[FCSR_N] = ((val & 0x07) << 5) | (CSR[FCSR_N] & 0x1F);
             else if (csr == FCSR_N) CSR[FCSR_N] = val & 0xFF;
+            else if (csr == SATP) {
+                // evaluate if changes have been made to SATP
+                signed<32> tmp = ETISS_SIGNAL_MMU(val);
+                CSR[SATP] = val;
+            }
             else CSR[csr] = val;
         }
     }
@@ -68,15 +95,10 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: rs1[4:0] :: 0b001 :: rd[4:0] :: 0b1110011;
             args_disass:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
                 unsigned<XLEN> xrs1 = X[rs1];
-                if (rd != 0) {
-                    unsigned<XLEN> xrd = csr_read(csr);
-                    csr_write(csr, xrs1);
-                    // make sure Xrd is updated once CSR write succeeds
-                    X[rd] = xrd;
-                } else {
-                    csr_write(csr, xrs1);
-                }
+                csr_write(csr, xrs1);
+                if (rd != 0) X[rd] = xrd;
             }
         }
 
@@ -159,6 +181,55 @@ InstructionSet tum_rva extends RV32A {
                 if (RES_ADDR == offs) MEM[offs] = (signed<32>)X[rs2];
                 if (rd) X[rd] = RES_ADDR != offs;
                 RES_ADDR = -1;
+            }
+        }
+    }
+}
+
+
+InstructionSet tum_sfence {
+    functions {
+        // black-box function to evict all addresses from all asids
+        extern signed<32> ETISS_TLB_FLUSH() [[etiss_needs_arch]];
+
+        // black-box function to evict given address from all asids
+        extern signed<32> ETISS_TLB_EVICT_VMA(unsigned<XLEN> vma_) [[etiss_needs_arch]];
+
+        signed<32> evict_all() {
+            return ETISS_TLB_FLUSH();   // evicts all addresses from all asids
+        }
+
+        signed<32> evict_asid(unsigned<XLEN> asid) {
+            return ETISS_TLB_FLUSH();   // TODO: should only evict all addresses with given asid
+        }
+
+        signed<32> evict_addr(unsigned<XLEN> vaddr) {
+            return ETISS_TLB_EVICT_VMA(vaddr);  // evicts given address from all asids
+        }
+
+        signed<32> evict_addr_asid(unsigned<XLEN> vaddr, unsigned<XLEN> asid) {
+            return ETISS_TLB_FLUSH();   // TODO: should only evict given address in given asid
+        }
+    }
+
+    instructions {
+        SFENCE_VMA {
+            encoding: 0b0001001 :: rs2[4:0] :: rs1[4:0] :: 0b000 :: 0b00000 :: 0b1110011;
+            args_disass: "{name(rs1)}, {name(rs2)}";
+            behavior: {
+                signed<32> ret = 0;
+                FENCE[2] = rs1;
+                FENCE[3] = rs2;
+                unsigned<XLEN> vaddr = X[rs1];
+                unsigned<XLEN> asid = X[rs2];
+                if (rs1 == 0) {
+                    if (rs2 == 0) ret = evict_all();
+                    else ret = evict_asid(asid);
+                }
+                else {
+                    if (rs2 == 0) ret = evict_addr(vaddr);
+                    else ret = evict_addr_asid(vaddr, asid);
+                }
             }
         }
     }
