@@ -7,7 +7,7 @@ InstructionSet tum_ret extends RISCVBase {
         URET [[no_cont]] {
             encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-                // priviledge change indicates context-switch
+                // privilege change indicates context-switch
                 signed<32> ret = 0; // maybe use exception instead of ret, since codegen appends: return exception
                 if (CSR[3088] != 0) {
                     CSR[3088] = 0;
@@ -24,7 +24,7 @@ InstructionSet tum_ret extends RISCVBase {
         SRET [[no_cont]] {
             encoding: 0b0001000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-                // priviledge change indicates context-switch
+                // privilege change indicates context-switch
                 signed<32> ret = 0;
 				if (CSR[3088] != (CSR[256] & 0x100) >> 8) {
                     CSR[3088] = (CSR[256] & 0x100) >> 8;
@@ -42,7 +42,7 @@ InstructionSet tum_ret extends RISCVBase {
         MRET [[no_cont]] {
             encoding: 0b0011000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-                // priviledge change indicates context-switch
+                // privilege change indicates context-switch
                 signed<32> ret = 0;
 				if (CSR[3088] != (CSR[768] & 0x1800) >> 11) {
                     CSR[3088] = (CSR[768] & 0x1800) >> 11;
@@ -81,11 +81,12 @@ InstructionSet tum_csr extends Zicsr {
             if (csr == FFLAGS_N) CSR[FCSR_N] = (CSR[FCSR_N] & (0x07 << 5)) | (val & 0x1F);
             else if (csr == FRM_N) CSR[FCSR_N] = ((val & 0x07) << 5) | (CSR[FCSR_N] & 0x1F);
             else if (csr == FCSR_N) CSR[FCSR_N] = val & 0xFF;
-            else CSR[csr] = val;
-            // evaluate if changes have been made to SATP
-            if (csr == SATP) {
+            else if (csr == SATP) {
+                // evaluate if changes have been made to SATP
                 signed<32> tmp = ETISS_SIGNAL_MMU(val);
+                CSR[SATP] = val;
             }
+            else CSR[csr] = val;
         }
     }
 
