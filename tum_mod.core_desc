@@ -68,12 +68,12 @@ InstructionSet tum_csr extends Zicsr {
             encoding: csr[11:0] :: rs1[4:0] :: 3'b001 :: rd[4:0] :: 7'b1110011;
             assembly:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
-                unsigned<XLEN> xrs1 = X[rs1];
-                if (rd != 0) {
+                unsigned<XLEN> xrs1 = X[rs1 % RFS];
+                if ((rd % RFS) != 0) {
                     unsigned<XLEN> xrd = csr_read(csr);
                     csr_write(csr, xrs1);
                     // make sure Xrd is updated once CSR write succeeds
-                    X[rd] = xrd;
+                    X[rd % RFS] = xrd;
                 } else {
                     csr_write(csr, xrs1);
                 }
@@ -85,9 +85,9 @@ InstructionSet tum_csr extends Zicsr {
             assembly:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
-                unsigned<XLEN> xrs1 = X[rs1];
+                unsigned<XLEN> xrs1 = X[rs1 % RFS];
                 if (rs1 != 0) csr_write(csr, xrd | xrs1);
-                if (rd != 0) X[rd] = xrd;
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
             }
         }
 
@@ -96,9 +96,9 @@ InstructionSet tum_csr extends Zicsr {
             assembly:"{name(rd)}, {csr}, {name(rs1)}";
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
-                unsigned<XLEN> xrs1 = X[rs1];
+                unsigned<XLEN> xrs1 = X[rs1 % RFS];
                 if (rs1 != 0) csr_write(csr, xrd & ~xrs1);
-                if (rd != 0) X[rd] = xrd;
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
             }
         }
 
@@ -108,7 +108,7 @@ InstructionSet tum_csr extends Zicsr {
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
                 csr_write(csr, (unsigned<XLEN>)zimm);
-                if (rd != 0) X[rd] = xrd;
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
             }
         }
 
@@ -118,7 +118,7 @@ InstructionSet tum_csr extends Zicsr {
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
                 if (zimm != 0) csr_write(csr, xrd | (unsigned<XLEN>)zimm);
-                if (rd != 0) X[rd] = xrd;
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
             }
         }
 
@@ -128,7 +128,7 @@ InstructionSet tum_csr extends Zicsr {
             behavior: {
                 unsigned<XLEN> xrd = csr_read(csr);
                 if (zimm != 0) csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
-                if (rd != 0) X[rd] = xrd;
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
             }
         }
     }
@@ -144,10 +144,10 @@ InstructionSet tum_rva extends RV32A {
             encoding: 5'b00010 :: aq[0:0] :: rl[0:0]  :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b0101111;
             assembly: "{name(rd)}, {name(rs1)}, {name(aq)}, {name(rl)}";
             behavior: {
-                unsigned<XLEN> offs = X[rs1];
+                unsigned<XLEN> offs = X[rs1 % RFS];
                 signed<32> res = (signed<32>)MEM[offs];
                 RES_ADDR = offs;
-                if (rd) X[rd] = (signed<XLEN>)res;
+                if (rd) X[rd % RFS] = (signed<XLEN>)res;
             }
         }
 
@@ -155,9 +155,9 @@ InstructionSet tum_rva extends RV32A {
             encoding: 5'b00011 :: aq[0:0] :: rl[0:0] :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b0101111;
             assembly: "{name(rd)}, {name(rs1)}, {name(rs2)}, {name(aq)}, {name(rl)}";
             behavior: {
-                unsigned<XLEN> offs = X[rs1];
-                if (RES_ADDR == offs) MEM[offs] = (signed<32>)X[rs2];
-                if (rd) X[rd] = RES_ADDR != offs;
+                unsigned<XLEN> offs = X[rs1 % RFS];
+                if (RES_ADDR == offs) MEM[offs] = (signed<32>)X[rs2 % RFS];
+                if (rd) X[rd % RFS] = RES_ADDR != offs;
                 RES_ADDR = -1;
             }
         }
