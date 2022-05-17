@@ -3,6 +3,82 @@ import "rv_base/RV32I.core_desc"
 import "rv_base/RVA.core_desc"
 
 InstructionSet tum_ret extends RISCVBase {
+    architectural_state {
+        signed<32> ETISS_RETURNCODE_NOERROR = 0;
+        signed<32> ETISS_RETURNCODE_GENERALERROR = -1;
+        signed<32> ETISS_RETURNCODE_RELOADBLOCKS = -2;
+        signed<32> ETISS_RETURNCODE_RELOADCURRENTBLOCK = -3;
+        signed<32> ETISS_RETURNCODE_DBUS_READ_ERROR = -5;
+        signed<32> ETISS_RETURNCODE_DBUS_WRITE_ERROR = -6;
+        signed<32> ETISS_RETURNCODE_IBUS_READ_ERROR = -7;
+        signed<32> ETISS_RETURNCODE_IBUS_WRITE_ERROR = -8;
+        signed<32> ETISS_RETURNCODE_INTERRUPT = -9;
+        signed<32> ETISS_RETURNCODE_RESET = -10;
+        signed<32> ETISS_RETURNCODE_ILLEGALINSTRUCTION = -11;
+        signed<32> ETISS_RETURNCODE_ILLEGALJUMP = -12;
+        signed<32> ETISS_RETURNCODE_INSTR_PAGEFAULT = -13;
+        signed<32> ETISS_RETURNCODE_LOAD_PAGEFAULT = -14;
+        signed<32> ETISS_RETURNCODE_STORE_PAGEFAULT = -15;
+        signed<32> ETISS_RETURNCODE_GDBNOERROR = -16;
+        signed<32> ETISS_RETURNCODE_SYSCALL = -17;
+        signed<32> ETISS_RETURNCODE_PAGEFAULT = -18;
+        signed<32> ETISS_RETURNCODE_BREAKPOINT = -19;
+        signed<32> ETISS_RETURNCODE_CPUFINISHED = 1 << 31;
+        signed<32> ETISS_RETURNCODE_CPUTERMINATED = 0x80000001;
+        signed<32> ETISS_RETURNCODE_JITERROR = -32;
+        signed<32> ETISS_RETURNCODE_JITCOMPILATIONERROR = -33;
+        signed<32> ETISS_RETURNCODE_ARCHERROR = -34;
+        signed<32> ETISS_RETURNCODE_EMULATIONNOTSUPPORTED = -35;
+        signed<32> ETISS_RETURNCODE_INVALIDSYSTEM = -36;
+        signed<32> ETISS_RETURNCODE_TEMPORARY0 = -128;
+        signed<32> ETISS_RETURNCODE_TEMPORARY1 = -129;
+        signed<32> ETISS_RETURNCODE_TEMPORARY2 = -130;
+        signed<32> ETISS_RETURNCODE_TEMPORARY3 = -131;
+        signed<32> ETISS_RETURNCODE_TEMPORARY4 = -132;
+        signed<32> ETISS_RETURNCODE_TEMPORARY5 = -133;
+        signed<32> ETISS_RETURNCODE_TEMPORARY6 = -134;
+        signed<32> ETISS_RETURNCODE_TEMPORARY7 = -135;
+
+        signed<32> RV_MISALIGNED_FETCH = 0x00;
+        signed<32> RV_FETCH_ACCESS = 0x01;
+        signed<32> RV_ILLEGAL_INSTRUCTION = 0x02;
+        signed<32> RV_BREAKPOINT = 0x03;
+        signed<32> RV_MISALIGNED_LOAD = 0x04;
+        signed<32> RV_LOAD_ACCESS = 0x05;
+        signed<32> RV_MISALIGNED_STORE = 0x06;
+        signed<32> RV_STORE_ACCESS = 0x07;
+        signed<32> RV_USER_ECALL = 0x08;
+        signed<32> RV_SUPERVISOR_ECALL = 0x09;
+        signed<32> RV_VIRTUAL_SUPERVISOR_ECALL = 0x0A;
+        signed<32> RV_MACHINE_ECALL = 0x0B;
+        signed<32> RV_FETCH_PAGE_FAULT = 0x0C;
+        signed<32> RV_LOAD_PAGE_FAULT = 0x0D;
+        signed<32> RV_STORE_PAGE_FAULT = 0x0F;
+        signed<32> RV_FETCH_GUEST_PAGE_FAULT = 0x14;
+        signed<32> RV_LOAD_GUEST_PAGE_FAULT = 0x15;
+        signed<32> RV_VIRTUAL_INSTRUCTION = 0x16;
+        signed<32> RV_STORE_GUEST_PAGE_FAULT = 0x17;
+    }
+
+    functions {
+        signed<32> raise(int irq, int mcause) [[etiss_exc_entry]] {
+            if (irq != 0) {
+                return ETISS_RETURNCODE_INTERRUPT;
+            } else {
+                if (mcause == RV_MISALIGNED_FETCH || mcause == RV_FETCH_ACCESS) return ETISS_RETURNCODE_IBUS_READ_ERROR;
+                if (mcause == RV_ILLEGAL_INSTRUCTION) return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
+                if (mcause == RV_BREAKPOINT) return ETISS_RETURNCODE_BREAKPOINT;
+                if (mcause == RV_MISALIGNED_LOAD || mcause == RV_LOAD_ACCESS) return ETISS_RETURNCODE_DBUS_READ_ERROR;
+                if (mcause == RV_MISALIGNED_STORE || mcause == RV_STORE_ACCESS) return ETISS_RETURNCODE_DBUS_WRITE_ERROR;
+                if (mcause == RV_USER_ECALL || mcause == RV_SUPERVISOR_ECALL || mcause == RV_VIRTUAL_SUPERVISOR_ECALL || mcause == RV_MACHINE_ECALL) return ETISS_RETURNCODE_SYSCALL;
+                if (mcause == RV_FETCH_PAGE_FAULT || mcause == RV_FETCH_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_INSTR_PAGEFAULT;
+                if (mcause == RV_LOAD_PAGE_FAULT || mcause == RV_LOAD_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_LOAD_PAGEFAULT;
+                if (mcause == RV_STORE_PAGE_FAULT || mcause == RV_STORE_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_STORE_PAGEFAULT;
+                return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
+            }
+        }
+    }
+
 	instructions {
         URET [[no_cont]] {
             encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
