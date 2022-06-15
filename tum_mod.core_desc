@@ -67,7 +67,7 @@ InstructionSet tum_ret extends RISCVBase {
             } else {
                 if (mcause == RV_MISALIGNED_FETCH || mcause == RV_FETCH_ACCESS) return ETISS_RETURNCODE_IBUS_READ_ERROR;
                 if (mcause == RV_ILLEGAL_INSTRUCTION) return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
-                if (mcause == RV_BREAKPOINT) return ETISS_RETURNCODE_BREAKPOINT;
+                if (mcause == RV_BREAKPOINT) return ETISS_RETURNCODE_CPUFINISHED;
                 if (mcause == RV_MISALIGNED_LOAD || mcause == RV_LOAD_ACCESS) return ETISS_RETURNCODE_DBUS_READ_ERROR;
                 if (mcause == RV_MISALIGNED_STORE || mcause == RV_STORE_ACCESS) return ETISS_RETURNCODE_DBUS_WRITE_ERROR;
                 if (mcause == RV_USER_ECALL || mcause == RV_SUPERVISOR_ECALL || mcause == RV_VIRTUAL_SUPERVISOR_ECALL || mcause == RV_MACHINE_ECALL) return ETISS_RETURNCODE_SYSCALL;
@@ -76,6 +76,18 @@ InstructionSet tum_ret extends RISCVBase {
                 if (mcause == RV_STORE_PAGE_FAULT || mcause == RV_STORE_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_STORE_PAGEFAULT;
                 return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
             }
+        }
+
+        signed<32> translate_exc_code(int cause) [[etiss_mem_exc_entry=MEM]] {
+            int code = 0;
+
+            if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_LOAD_ACCESS;
+            else if (cause == ETISS_RETURNCODE_LOAD_PAGEFAULT) code = RV_LOAD_PAGE_FAULT;
+            else if (cause == ETISS_RETURNCODE_DBUS_WRITE_ERROR) code = RV_STORE_ACCESS;
+            else if (cause == ETISS_RETURNCODE_STORE_PAGEFAULT) code = RV_STORE_PAGE_FAULT;
+            else return RV_ILLEGAL_INSTRUCTION;
+
+            return raise(0, code);
         }
     }
 
