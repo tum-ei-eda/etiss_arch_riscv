@@ -134,12 +134,28 @@ InstructionSet tum_csr extends Zicsr {
         unsigned int FFLAGS_N = 0x001;
         unsigned int FRM_N = 0x002;
         unsigned int FCSR_N = 0x003;
+        unsigned int CYCLE = 0xC00;
+        unsigned int CYCLEH = 0xC80;
+        unsigned int TIME = 0xC01;
+        unsigned int TIMEH = 0xC81;
+        unsigned int INSTRET = 0xC02;
+        unsigned int INSTRETH = 0xC82;
     }
 
     functions {
+        extern unsigned<64> etiss_get_cycles() [[ etiss_needs_arch ]];
+        extern unsigned<64> etiss_get_time();
+        extern unsigned<64> etiss_get_instret() [[ etiss_needs_arch ]];
         unsigned<XLEN> csr_read(unsigned int csr) {
             if (csr == FFLAGS_N) return CSR[FCSR_N] & 0x1F;
             if (csr == FRM_N) return (CSR[FCSR_N] >> 5) & 0x07;
+            if (csr == CYCLE) return etiss_get_cycles();
+            if (csr == CYCLEH) return etiss_get_cycles() >> 32;
+            if (csr == TIME) return etiss_get_time();
+            if (csr == TIMEH) return etiss_get_time() >> 32;
+            if (csr == INSTRET) return etiss_get_instret();
+            if (csr == INSTRETH) return etiss_get_instret() >> 32;
+
             return CSR[csr];
         }
 
