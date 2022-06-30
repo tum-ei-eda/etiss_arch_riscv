@@ -78,7 +78,7 @@ InstructionSet tum_ret extends RISCVBase {
             }
         }
 
-        signed<32> translate_exc_code(int cause) [[etiss_mem_exc_entry=MEM]] {
+        void translate_exc_code(int cause) [[etiss_mem_exc_entry=MEM]] {
             int code = 0;
 
             if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_LOAD_ACCESS;
