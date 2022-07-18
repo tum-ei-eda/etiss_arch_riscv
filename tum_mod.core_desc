@@ -38,26 +38,6 @@ InstructionSet tum_ret extends RISCVBase {
         signed<32> ETISS_RETURNCODE_TEMPORARY5 = -133;
         signed<32> ETISS_RETURNCODE_TEMPORARY6 = -134;
         signed<32> ETISS_RETURNCODE_TEMPORARY7 = -135;
-
-        signed<32> RV_MISALIGNED_FETCH = 0x00;
-        signed<32> RV_FETCH_ACCESS = 0x01;
-        signed<32> RV_ILLEGAL_INSTRUCTION = 0x02;
-        signed<32> RV_BREAKPOINT = 0x03;
-        signed<32> RV_MISALIGNED_LOAD = 0x04;
-        signed<32> RV_LOAD_ACCESS = 0x05;
-        signed<32> RV_MISALIGNED_STORE = 0x06;
-        signed<32> RV_STORE_ACCESS = 0x07;
-        signed<32> RV_USER_ECALL = 0x08;
-        signed<32> RV_SUPERVISOR_ECALL = 0x09;
-        signed<32> RV_VIRTUAL_SUPERVISOR_ECALL = 0x0A;
-        signed<32> RV_MACHINE_ECALL = 0x0B;
-        signed<32> RV_FETCH_PAGE_FAULT = 0x0C;
-        signed<32> RV_LOAD_PAGE_FAULT = 0x0D;
-        signed<32> RV_STORE_PAGE_FAULT = 0x0F;
-        signed<32> RV_FETCH_GUEST_PAGE_FAULT = 0x14;
-        signed<32> RV_LOAD_GUEST_PAGE_FAULT = 0x15;
-        signed<32> RV_VIRTUAL_INSTRUCTION = 0x16;
-        signed<32> RV_STORE_GUEST_PAGE_FAULT = 0x17;
     }
 
     functions {
@@ -65,15 +45,15 @@ InstructionSet tum_ret extends RISCVBase {
             if (irq != 0) {
                 return ETISS_RETURNCODE_INTERRUPT;
             } else {
-                if (mcause == RV_MISALIGNED_FETCH || mcause == RV_FETCH_ACCESS) return ETISS_RETURNCODE_IBUS_READ_ERROR;
-                if (mcause == RV_ILLEGAL_INSTRUCTION) return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
-                if (mcause == RV_BREAKPOINT) return ETISS_RETURNCODE_CPUFINISHED;
-                if (mcause == RV_MISALIGNED_LOAD || mcause == RV_LOAD_ACCESS) return ETISS_RETURNCODE_DBUS_READ_ERROR;
-                if (mcause == RV_MISALIGNED_STORE || mcause == RV_STORE_ACCESS) return ETISS_RETURNCODE_DBUS_WRITE_ERROR;
-                if (mcause == RV_USER_ECALL || mcause == RV_SUPERVISOR_ECALL || mcause == RV_VIRTUAL_SUPERVISOR_ECALL || mcause == RV_MACHINE_ECALL) return ETISS_RETURNCODE_SYSCALL;
-                if (mcause == RV_FETCH_PAGE_FAULT || mcause == RV_FETCH_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_INSTR_PAGEFAULT;
-                if (mcause == RV_LOAD_PAGE_FAULT || mcause == RV_LOAD_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_LOAD_PAGEFAULT;
-                if (mcause == RV_STORE_PAGE_FAULT || mcause == RV_STORE_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_STORE_PAGEFAULT;
+                if (mcause == RV_CAUSE_MISALIGNED_FETCH || mcause == RV_CAUSE_FETCH_ACCESS) return ETISS_RETURNCODE_IBUS_READ_ERROR;
+                if (mcause == RV_CAUSE_ILLEGAL_INSTRUCTION) return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
+                if (mcause == RV_CAUSE_BREAKPOINT) return ETISS_RETURNCODE_CPUFINISHED;
+                if (mcause == RV_CAUSE_MISALIGNED_LOAD || mcause == RV_CAUSE_LOAD_ACCESS) return ETISS_RETURNCODE_DBUS_READ_ERROR;
+                if (mcause == RV_CAUSE_MISALIGNED_STORE || mcause == RV_CAUSE_STORE_ACCESS) return ETISS_RETURNCODE_DBUS_WRITE_ERROR;
+                if (mcause == RV_CAUSE_USER_ECALL || mcause == RV_CAUSE_SUPERVISOR_ECALL || mcause == RV_CAUSE_VIRTUAL_SUPERVISOR_ECALL || mcause == RV_CAUSE_MACHINE_ECALL) return ETISS_RETURNCODE_SYSCALL;
+                if (mcause == RV_CAUSE_FETCH_PAGE_FAULT || mcause == RV_CAUSE_FETCH_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_INSTR_PAGEFAULT;
+                if (mcause == RV_CAUSE_LOAD_PAGE_FAULT || mcause == RV_CAUSE_LOAD_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_LOAD_PAGEFAULT;
+                if (mcause == RV_CAUSE_STORE_PAGE_FAULT || mcause == RV_CAUSE_STORE_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_STORE_PAGEFAULT;
                 return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
             }
         }
@@ -81,11 +61,11 @@ InstructionSet tum_ret extends RISCVBase {
         void translate_exc_code(int cause) [[etiss_mem_exc_entry=MEM]] {
             int code = 0;
 
-            if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_LOAD_ACCESS;
-            else if (cause == ETISS_RETURNCODE_LOAD_PAGEFAULT) code = RV_LOAD_PAGE_FAULT;
-            else if (cause == ETISS_RETURNCODE_DBUS_WRITE_ERROR) code = RV_STORE_ACCESS;
-            else if (cause == ETISS_RETURNCODE_STORE_PAGEFAULT) code = RV_STORE_PAGE_FAULT;
-            else code = RV_ILLEGAL_INSTRUCTION;
+            if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_CAUSE_LOAD_ACCESS;
+            else if (cause == ETISS_RETURNCODE_LOAD_PAGEFAULT) code = RV_CAUSE_LOAD_PAGE_FAULT;
+            else if (cause == ETISS_RETURNCODE_DBUS_WRITE_ERROR) code = RV_CAUSE_STORE_ACCESS;
+            else if (cause == ETISS_RETURNCODE_STORE_PAGEFAULT) code = RV_CAUSE_STORE_PAGE_FAULT;
+            else code = RV_CAUSE_ILLEGAL_INSTRUCTION;
 
             raise(0, code);
         }
@@ -130,39 +110,29 @@ InstructionSet tum_ret extends RISCVBase {
 }
 
 InstructionSet tum_csr extends Zicsr {
-    architectural_state {
-        unsigned int FFLAGS_N = 0x001;
-        unsigned int FRM_N = 0x002;
-        unsigned int FCSR_N = 0x003;
-        unsigned int CYCLE = 0xC00;
-        unsigned int CYCLEH = 0xC80;
-        unsigned int TIME = 0xC01;
-        unsigned int TIMEH = 0xC81;
-        unsigned int INSTRET = 0xC02;
-        unsigned int INSTRETH = 0xC82;
-    }
-
     functions {
         extern unsigned<64> etiss_get_cycles() [[ etiss_needs_arch ]];
         extern unsigned<64> etiss_get_time();
         extern unsigned<64> etiss_get_instret() [[ etiss_needs_arch ]];
+
         unsigned<XLEN> csr_read(unsigned int csr) {
-            if (csr == FFLAGS_N) return CSR[FCSR_N] & 0x1F;
-            if (csr == FRM_N) return (CSR[FCSR_N] >> 5) & 0x07;
-            if (csr == CYCLE) return etiss_get_cycles();
-            if (csr == CYCLEH) return etiss_get_cycles() >> 32;
-            if (csr == TIME) return etiss_get_time();
-            if (csr == TIMEH) return etiss_get_time() >> 32;
-            if (csr == INSTRET) return etiss_get_instret();
-            if (csr == INSTRETH) return etiss_get_instret() >> 32;
+            if (csr == RV_CSR_FFLAGS) return CSR[RV_CSR_FCSR] & 0x1F;
+            if (csr == RV_CSR_FRM) return (CSR[RV_CSR_FCSR] >> 5) & 0x07;
+            if (csr == RV_CSR_CYCLE) return etiss_get_cycles();
+            if (csr == RV_CSR_CYCLEH) return etiss_get_cycles() >> 32;
+            if (csr == RV_CSR_TIME) return etiss_get_time();
+            if (csr == RV_CSR_TIMEH) return etiss_get_time() >> 32;
+            if (csr == RV_CSR_INSTRET) return etiss_get_instret();
+            if (csr == RV_CSR_INSTRETH) return etiss_get_instret() >> 32;
 
             return CSR[csr];
         }
 
         void csr_write(unsigned int csr, unsigned<XLEN> val) {
-            if (csr == FFLAGS_N) CSR[FCSR_N] = (CSR[FCSR_N] & (0x07 << 5)) | (val & 0x1F);
-            else if (csr == FRM_N) CSR[FCSR_N] = ((val & 0x07) << 5) | (CSR[FCSR_N] & 0x1F);
-            else if (csr == FCSR_N) CSR[FCSR_N] = val & 0xFF;
+            if (csr == RV_CSR_FFLAGS) CSR[RV_CSR_FCSR] = (CSR[RV_CSR_FCSR] & (0x07 << 5)) | (val & 0x1F);
+            else if (csr == RV_CSR_FRM) CSR[RV_CSR_FCSR] = ((val & 0x07) << 5) | (CSR[RV_CSR_FCSR] & 0x1F);
+            else if (csr == RV_CSR_FCSR) CSR[RV_CSR_FCSR] = val & 0xFF;
+            else if (csr == RV_CSR_MSTATUS) CSR[RV_CSR_MSTATUS] = val & 0x00000088;
             else CSR[csr] = val;
         }
     }
