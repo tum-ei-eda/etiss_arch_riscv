@@ -71,42 +71,42 @@ InstructionSet tum_ret extends RISCVBase {
         }
     }
 
-	instructions {
+    instructions {
         URET [[no_cont]] {
             encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
             behavior: {
-				CSR[3088] = 0;
-				CSR[0] ^= ((CSR[0] & 0x10) >> 4) ^ (CSR[0] & 0x01);
-				PC = CSR[65];
-				CSR[768] = CSR[0];
-				CSR[256] = CSR[0];
-			}
+                CSR[3088] = 0;
+                CSR[0] ^= ((CSR[0] & 0x10) >> 4) ^ (CSR[0] & 0x01);
+                PC = CSR[65];
+                CSR[RV_CSR_MSTATUS] = CSR[0];
+                CSR[RV_CSR_SSTATUS] = CSR[0];
+            }
         }
 
         SRET [[no_cont]] {
             encoding: 7'b0001000 :: 5'b00010 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
-				CSR[3088] = (CSR[256] & 0x100) >> 8;
-				CSR[256] ^= (CSR[256] & 0x100);
-				CSR[256] ^= ((CSR[256] & 0x20) >> 4) ^ (CSR[256] & 0x2);
-				PC = CSR[321];
-				CSR[768]= CSR[256];
-				CSR[0]=CSR[256];
-			}
+                CSR[3088] = (CSR[RV_CSR_SSTATUS] & 0x100) >> 8;
+                CSR[RV_CSR_SSTATUS] ^= (CSR[RV_CSR_SSTATUS] & 0x100);
+                CSR[RV_CSR_SSTATUS] ^= ((CSR[RV_CSR_SSTATUS] & 0x20) >> 4) ^ (CSR[RV_CSR_SSTATUS] & 0x2);
+                PC = CSR[RV_CSR_SEPC];
+                CSR[RV_CSR_MSTATUS]= CSR[RV_CSR_SSTATUS];
+                CSR[0] = CSR[RV_CSR_SSTATUS];
+            }
         }
 
         MRET [[no_cont]] {
             encoding: 7'b0011000 :: 5'b00010 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
-				CSR[3088] = (CSR[768] & 0x1800) >> 11;
-				CSR[768] ^= (CSR[768] & 0x1800);
-				CSR[768] ^= ((CSR[768] & 0x80) >> 4) ^ (CSR[768] & 0x8);
-				PC = CSR[833];
-				CSR[0] = CSR[768];
-				CSR[256] = CSR[768];
-			}
+                CSR[3088] = (CSR[RV_CSR_MSTATUS] & 0x1800) >> 11;
+                CSR[RV_CSR_MSTATUS] ^= (CSR[RV_CSR_MSTATUS] & 0x1800);
+                CSR[RV_CSR_MSTATUS] ^= ((CSR[RV_CSR_MSTATUS] & 0x80) >> 4) ^ (CSR[RV_CSR_MSTATUS] & 0x8);
+                PC = CSR[RV_CSR_MEPC];
+                CSR[0] = CSR[RV_CSR_MSTATUS];
+                CSR[RV_CSR_SSTATUS] = CSR[RV_CSR_MSTATUS];
+            }
         }
-	}
+    }
 }
 
 InstructionSet tum_csr extends Zicsr {
