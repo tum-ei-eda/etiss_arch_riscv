@@ -10,15 +10,15 @@ import "tum_mod.core_desc"
 Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, tum_csr, tum_ret, tum_rva {
     architectural_state {
         CSR[0x000] = 0x0000000B; // ustatus
-        CSR[0x100] = 0x0000000B; // sstatus
-        CSR[0x300] = 0x0000000B; // mstatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
 
-        CSR[0x301] = 0x4014112D; // misa
+        CSR[RV_CSR_MISA] = 0x4014112D; // misa
 
         CSR[0xC10] = 0x00000003;
 
-        CSR[0x304] = 0xFFFFFBBB; // mie
-        CSR[0x104] = CSR[0x304] & (~(0x888)); // sie
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
         CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
     }
 }
@@ -26,15 +26,15 @@ Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zif
 Core RV64IMACFD provides RV64I, RV64IC, RV64F, RV32FC, RV64D, RV32DC, RV64A, tum_csr, tum_ret, tum_rva64 {
     architectural_state {
         CSR[0x000] = 0x0000000B; // ustatus
-        CSR[0x100] = 0x0000000B; // sstatus
-        CSR[0x300] = 0x0000000B; // mstatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
 
-        CSR[0x301] = 0x800000000014112D; // misa
+        CSR[RV_CSR_MISA] = 0x800000000014112D; // misa
 
         CSR[0xC10] = 0x00000003;
 
-        CSR[0x304] = 0xFFFFFBBB; // mie
-        CSR[0x104] = CSR[0x304] & (~(0x888)); // sie
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
         CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
     }
 }
