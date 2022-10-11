@@ -41,21 +41,26 @@ InstructionSet tum_ret extends RISCVBase {
     }
 
     functions {
-        signed<32> raise(int irq, int mcause) [[etiss_exc_entry]] {
-            if (irq != 0) {
-                return ETISS_RETURNCODE_INTERRUPT;
-            } else {
-                if (mcause == RV_CAUSE_MISALIGNED_FETCH || mcause == RV_CAUSE_FETCH_ACCESS) return ETISS_RETURNCODE_IBUS_READ_ERROR;
-                if (mcause == RV_CAUSE_ILLEGAL_INSTRUCTION) return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
-                if (mcause == RV_CAUSE_BREAKPOINT) return ETISS_RETURNCODE_CPUFINISHED;
-                if (mcause == RV_CAUSE_MISALIGNED_LOAD || mcause == RV_CAUSE_LOAD_ACCESS) return ETISS_RETURNCODE_DBUS_READ_ERROR;
-                if (mcause == RV_CAUSE_MISALIGNED_STORE || mcause == RV_CAUSE_STORE_ACCESS) return ETISS_RETURNCODE_DBUS_WRITE_ERROR;
-                if (mcause == RV_CAUSE_USER_ECALL || mcause == RV_CAUSE_SUPERVISOR_ECALL || mcause == RV_CAUSE_VIRTUAL_SUPERVISOR_ECALL || mcause == RV_CAUSE_MACHINE_ECALL) return ETISS_RETURNCODE_SYSCALL;
-                if (mcause == RV_CAUSE_FETCH_PAGE_FAULT || mcause == RV_CAUSE_FETCH_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_INSTR_PAGEFAULT;
-                if (mcause == RV_CAUSE_LOAD_PAGE_FAULT || mcause == RV_CAUSE_LOAD_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_LOAD_PAGEFAULT;
-                if (mcause == RV_CAUSE_STORE_PAGE_FAULT || mcause == RV_CAUSE_STORE_GUEST_PAGE_FAULT) return ETISS_RETURNCODE_STORE_PAGEFAULT;
-                return ETISS_RETURNCODE_ILLEGALINSTRUCTION;
-            }
+        unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
+            return (reg & mask) / (mask & ~(mask << 1));
+        }
+
+        unsigned<64> set_field(unsigned<64> reg, unsigned<64> mask, unsigned<64> val) {
+            return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
+        }
+
+        void raise(int irq, int mcause) [[ etiss_exc_entry ]] {
+            unsigned<XLEN> epc = PC;
+            PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1);
+            CSR[RV_CSR_MEPC] = epc;
+            CSR[RV_CSR_MCAUSE] = mcause;
+
+            unsigned<XLEN> s = CSR[RV_CSR_MSTATUS];
+            s = set_field(s, RV_MSTATUS_MPIE, get_field(s, RV_MSTATUS_MIE));
+            s = set_field(s, RV_MSTATUS_MPP, PRIV);
+            s = set_field(s, RV_MSTATUS_MIE, 0);
+            CSR[RV_CSR_MSTATUS] = s;
+            PRIV = RV_PRV_M;
         }
 
         void translate_exc_code(int cause) [[etiss_mem_exc_entry=MEM]] {
@@ -72,38 +77,24 @@ InstructionSet tum_ret extends RISCVBase {
     }
 
     instructions {
-        URET [[no_cont]] {
-            encoding: 0b0000000 :: 0b00010 :: 0b00000 :: 0b000 :: 0b00000 :: 0b1110011;
-            behavior: {
-                CSR[3088] = 0;
-                CSR[0] ^= ((CSR[0] & 0x10) >> 4) ^ (CSR[0] & 0x01);
-                PC = CSR[65];
-                CSR[RV_CSR_MSTATUS] = CSR[0];
-                CSR[RV_CSR_SSTATUS] = CSR[0];
-            }
-        }
-
-        SRET [[no_cont]] {
-            encoding: 7'b0001000 :: 5'b00010 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
-            behavior: {
-                CSR[3088] = (CSR[RV_CSR_SSTATUS] & 0x100) >> 8;
-                CSR[RV_CSR_SSTATUS] ^= (CSR[RV_CSR_SSTATUS] & 0x100);
-                CSR[RV_CSR_SSTATUS] ^= ((CSR[RV_CSR_SSTATUS] & 0x20) >> 4) ^ (CSR[RV_CSR_SSTATUS] & 0x2);
-                PC = CSR[RV_CSR_SEPC];
-                CSR[RV_CSR_MSTATUS]= CSR[RV_CSR_SSTATUS];
-                CSR[0] = CSR[RV_CSR_SSTATUS];
-            }
-        }
-
         MRET [[no_cont]] {
             encoding: 7'b0011000 :: 5'b00010 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
-                CSR[3088] = (CSR[RV_CSR_MSTATUS] & 0x1800) >> 11;
-                CSR[RV_CSR_MSTATUS] ^= (CSR[RV_CSR_MSTATUS] & 0x1800);
-                CSR[RV_CSR_MSTATUS] ^= ((CSR[RV_CSR_MSTATUS] & 0x80) >> 4) ^ (CSR[RV_CSR_MSTATUS] & 0x8);
                 PC = CSR[RV_CSR_MEPC];
-                CSR[0] = CSR[RV_CSR_MSTATUS];
-                CSR[RV_CSR_SSTATUS] = CSR[RV_CSR_MSTATUS];
+
+                unsigned<XLEN> s = CSR[RV_CSR_MSTATUS];
+
+                unsigned<XLEN> prev_prv = get_field(s, RV_MSTATUS_MPP);
+
+                if (prev_prv != RV_PRV_M)
+                    s = set_field(s, RV_MSTATUS_MPRV, 0);
+
+                s = set_field(s, RV_MSTATUS_MIE, get_field(s, RV_MSTATUS_MPIE));
+                s = set_field(s, RV_MSTATUS_MPIE, 1);
+                s = set_field(s, RV_MSTATUS_MPP, RV_PRV_M);
+
+                CSR[RV_CSR_MSTATUS] = s;
+                PRIV = prev_prv;
             }
         }
     }
