@@ -255,3 +255,35 @@ InstructionSet tum_rva64 extends tum_rva {
         }
     }
 }
+
+InstructionSet tum_semihosting extends RV32I {
+    instructions {
+        EBREAK [[no_cont]] [[cond]] {
+            encoding: 0b000000000001 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
+            behavior: {
+                if (etiss_semihost_enabled()) {
+                    unsigned<32> pre    = (unsigned<32>)MEM[PC - 4];
+                    unsigned<32> ebreak = (unsigned<32>)MEM[PC + 0];
+                    unsigned<32> post   = (unsigned<32>)MEM[PC + 4];
+                    if ( pre    == 0x01f01013 // slli x0, x0, 0x1f   Entry NOP
+                      && ebreak == 0x00100073 // ebreak              Break to debugger
+                      && post   == 0x40705013 // srai x0, x0, 7      NOP encoding the semihosting call number 7
+                    ) {
+                    unsigned<XLEN> operation = X[10];
+                    unsigned<XLEN> parameter = X[11];
+                    X[10] = (signed<XLEN>)etiss_semihost(XLEN, operation, parameter);
+                    } else {
+                        raise(0, RV_CAUSE_BREAKPOINT);
+                    }
+                } else {
+                    raise(0, RV_CAUSE_BREAKPOINT);
+                }
+            }
+        }
+    }
+    
+    functions {
+        extern unsigned<8> etiss_semihost_enabled();
+        extern signed<64> etiss_semihost(unsigned<32> XLEN, unsigned<64> operation, unsigned<64> parameter) [[etiss_needs_arch]];
+    }
+}
