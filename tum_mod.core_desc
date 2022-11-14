@@ -125,7 +125,7 @@ InstructionSet tum_csr extends Zicsr {
             else if (csr == RV_CSR_FRM) CSR[RV_CSR_FCSR] = ((val & 0x07) << 5) | (CSR[RV_CSR_FCSR] & 0x1F);
             else if (csr == RV_CSR_FCSR) CSR[RV_CSR_FCSR] = val & 0xFF;
             else if (csr == RV_CSR_MSTATUS) CSR[RV_CSR_MSTATUS] = val & 0x00000088;
-            else CSR[csr] = val;
+            else if (csr != RV_CSR_MISA) CSR[csr] = val;
         }
     }
 
@@ -281,7 +281,7 @@ InstructionSet tum_semihosting extends RV32I {
             }
         }
     }
-    
+
     functions {
         extern unsigned<8> etiss_semihost_enabled();
         extern signed<64> etiss_semihost(unsigned<32> XLEN, unsigned<64> operation, unsigned<64> parameter) [[etiss_needs_arch]];
