@@ -205,7 +205,7 @@ InstructionSet tum_rva extends RV32A {
         register unsigned<XLEN> RES_ADDR = -1;
     }
 
-    instructions {
+    instructions [[ enable(CSR[RV_CSR_MISA] & (1 << 0)) ]] {
         LRW {
             encoding: 5'b00010 :: aq[0:0] :: rl[0:0]  :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b0101111;
             assembly: "{name(rd)}, {name(rs1)}, {name(aq)}, {name(rl)}";
@@ -231,7 +231,7 @@ InstructionSet tum_rva extends RV32A {
 }
 
 InstructionSet tum_rva64 extends tum_rva {
-    instructions {
+    instructions [[ enable(CSR[RV_CSR_MISA] & (1 << 0)) ]] {
         LRD {
             encoding: 5'b00010 :: aq[0:0] :: rl[0:0]  :: 5'b00000 :: rs1[4:0] :: 3'b011 :: rd[4:0] :: 7'b0101111;
             assembly: "{name(rd)}, {name(rs1)}, {name(aq)}, {name(rl)}";
