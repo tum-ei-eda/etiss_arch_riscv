@@ -66,7 +66,8 @@ InstructionSet tum_ret extends RISCVBase {
         void translate_exc_code(int cause) [[etiss_mem_exc_entry=MEM]] {
             int code = 0;
 
-            if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_CAUSE_LOAD_ACCESS;
+            if (cause == ETISS_RETURNCODE_CPUFINISHED) return;
+            else if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_CAUSE_LOAD_ACCESS;
             else if (cause == ETISS_RETURNCODE_LOAD_PAGEFAULT) code = RV_CAUSE_LOAD_PAGE_FAULT;
             else if (cause == ETISS_RETURNCODE_DBUS_WRITE_ERROR) code = RV_CAUSE_STORE_ACCESS;
             else if (cause == ETISS_RETURNCODE_STORE_PAGEFAULT) code = RV_CAUSE_STORE_PAGE_FAULT;
