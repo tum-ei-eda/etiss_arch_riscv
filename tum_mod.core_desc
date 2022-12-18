@@ -146,6 +146,34 @@ InstructionSet tum_csr extends Zicsr {
         extern unsigned<64> etiss_get_time();
         extern unsigned<64> etiss_get_instret() [[ etiss_needs_arch ]];
 
+        unsigned<XLEN> sstatus_mask() {
+            unsigned<XLEN> mask = 0;
+
+            if (extension_enabled('S')) {
+                mask |= 0 | (RV_MSTATUS_SIE | RV_MSTATUS_SPIE | RV_MSTATUS_SPP | RV_MSTATUS_MXR | RV_MSTATUS_TVM | RV_MSTATUS_TSR);
+
+                if (extension_enabled('V'))
+                    mask |= RV_MSTATUS_VS;
+
+                if (extension_enabled('F'))
+                    mask |= RV_MSTATUS_FS;
+
+                if (extension_enabled('X'))
+                    mask |= RV_MSTATUS_XS;
+
+                if (XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31) || XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60))
+                    mask |= RV_MSTATUS_SUM;
+            }
+
+            return mask;
+        }
+
+        unsigned<XLEN> mstatus_mask() {
+            unsigned<XLEN> mask = 0 | (RV_MSTATUS_MIE | RV_MSTATUS_MPIE | RV_MSTATUS_MPP);
+
+            return mask | sstatus_mask();
+        }
+
         unsigned<XLEN> csr_read(unsigned int csr) {
             if (csr == RV_CSR_FFLAGS) return CSR[RV_CSR_FCSR] & 0x1F;
             if (csr == RV_CSR_FRM) return (CSR[RV_CSR_FCSR] >> 5) & 0x07;
@@ -155,6 +183,8 @@ InstructionSet tum_csr extends Zicsr {
             if (csr == RV_CSR_TIMEH) return etiss_get_time() >> 32;
             if (csr == RV_CSR_INSTRET) return etiss_get_instret();
             if (csr == RV_CSR_INSTRETH) return etiss_get_instret() >> 32;
+            if (csr == RV_CSR_MSTATUS || csr == RV_CSR_SSTATUS) return CSR[RV_CSR_MSTATUS] | (RV_MSTATUS_UXL & (RV_MSTATUS_UXL << 1)) | (RV_MSTATUS_SXL & (RV_MSTATUS_SXL << 1));
+            if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 2:0];
 
             return CSR[csr];
         }
@@ -163,7 +193,9 @@ InstructionSet tum_csr extends Zicsr {
             if (csr == RV_CSR_FFLAGS) CSR[RV_CSR_FCSR] = (CSR[RV_CSR_FCSR] & (0x07 << 5)) | (val & 0x1F);
             else if (csr == RV_CSR_FRM) CSR[RV_CSR_FCSR] = ((val & 0x07) << 5) | (CSR[RV_CSR_FCSR] & 0x1F);
             else if (csr == RV_CSR_FCSR) CSR[RV_CSR_FCSR] = val & 0xFF;
-            else if (csr == RV_CSR_MSTATUS) CSR[RV_CSR_MSTATUS] = val & 0x00000088;
+            else if (csr == RV_CSR_MSTATUS) CSR[RV_CSR_MSTATUS] = val & mstatus_mask();
+            else if (csr == RV_CSR_SSTATUS) CSR[RV_CSR_MSTATUS] = val & sstatus_mask();
+
             else if (csr != RV_CSR_MISA) CSR[csr] = val;
         }
     }
