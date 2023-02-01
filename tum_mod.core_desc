@@ -370,13 +370,10 @@ InstructionSet tum_semihosting extends RV32I {
     }
 }
 
-InstructionSet tum_sfence {
+InstructionSet tum_sfence extends RV32I {
     functions {
-        // black-box function to evict all addresses from all asids
         extern signed<32> ETISS_TLB_FLUSH() [[etiss_needs_arch]];
-
-        // black-box function to evict given address from all asids
-        extern signed<32> ETISS_TLB_EVICT_VMA(unsigned<XLEN> vma_) [[etiss_needs_arch]];
+        extern signed<32> ETISS_TLB_EVICT_VMA(unsigned<64> vma_) [[etiss_needs_arch]];
 
         signed<32> evict_all() {
             return ETISS_TLB_FLUSH();   // evicts all addresses from all asids
@@ -396,22 +393,21 @@ InstructionSet tum_sfence {
     }
 
     instructions {
-        SFENCE_VMA {
+        SFENCE_VMA [[ flush ]] {
             encoding: 0b0001001 :: rs2[4:0] :: rs1[4:0] :: 0b000 :: 0b00000 :: 0b1110011;
             args_disass: "{name(rs1)}, {name(rs2)}";
             behavior: {
-                signed<32> ret = 0;
                 FENCE[2] = rs1;
                 FENCE[3] = rs2;
                 unsigned<XLEN> vaddr = X[rs1];
                 unsigned<XLEN> asid = X[rs2];
                 if (rs1 == 0) {
-                    if (rs2 == 0) ret = evict_all();
-                    else ret = evict_asid(asid);
+                    if (rs2 == 0) evict_all();
+                    else evict_asid(asid);
                 }
                 else {
-                    if (rs2 == 0) ret = evict_addr(vaddr);
-                    else ret = evict_addr_asid(vaddr, asid);
+                    if (rs2 == 0) evict_addr(vaddr);
+                    else evict_addr_asid(vaddr, asid);
                 }
             }
         }
