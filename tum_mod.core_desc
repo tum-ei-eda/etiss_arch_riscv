@@ -49,7 +49,7 @@ InstructionSet tum_ret extends RISCVBase {
             return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
         }
 
-        void raise(int irq, int mcause) [[ etiss_exc_entry ]] {
+        void raise(int irq, int mcause) [[ etiss_trap_entry_fn ]] {
             unsigned<XLEN> epc = PC;
 
             if (PRIV <= RV_PRV_S && (CSR[RV_CSR_MEDELEG] >> mcause) & 1) { // handle in S-MODE
@@ -77,7 +77,7 @@ InstructionSet tum_ret extends RISCVBase {
             }
         }
 
-        void translate_exc_code(int cause) [[ etiss_mem_exc_entry=MEM ]] {
+        void translate_exc_code(int cause) [[ etiss_trap_translate_fn=MEM ]] {
             int code = 0;
 
             if (cause == ETISS_RETURNCODE_CPUFINISHED) return;
