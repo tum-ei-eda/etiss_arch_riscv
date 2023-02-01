@@ -84,6 +84,7 @@ InstructionSet tum_ret extends RISCVBase {
 
             if (cause == ETISS_RETURNCODE_CPUFINISHED) return;
             else if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_CAUSE_LOAD_ACCESS;
+            else if (cause == ETISS_RETURNCODE_INSTR_PAGEFAULT) code = RV_CAUSE_FETCH_PAGE_FAULT;
             else if (cause == ETISS_RETURNCODE_LOAD_PAGEFAULT) code = RV_CAUSE_LOAD_PAGE_FAULT;
             else if (cause == ETISS_RETURNCODE_DBUS_WRITE_ERROR) code = RV_CAUSE_STORE_ACCESS;
             else if (cause == ETISS_RETURNCODE_STORE_PAGEFAULT) code = RV_CAUSE_STORE_PAGE_FAULT;
