@@ -41,6 +41,8 @@ InstructionSet tum_ret extends RISCVBase {
     }
 
     functions {
+        extern void etiss_icache_flush() [[ etiss_needs_simloop_return ]];
+
         unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
             return (reg & mask) / (mask & ~(mask << 1));
         }
@@ -107,6 +109,9 @@ InstructionSet tum_ret extends RISCVBase {
 
                 if (prev_prv != RV_PRV_M)
                     s = set_field(s, RV_MSTATUS_MPRV, 0);
+
+                if (prev_prv != PRIV)
+                    etiss_icache_flush();
 
                 s = set_field(s, RV_MSTATUS_MIE, get_field(s, RV_MSTATUS_MPIE));
                 s = set_field(s, RV_MSTATUS_MPIE, 1);
