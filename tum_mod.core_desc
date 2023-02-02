@@ -111,7 +111,7 @@ InstructionSet tum_ret extends RISCVBase {
                 if (prev_prv != RV_PRV_M)
                     s = set_field(s, RV_MSTATUS_MPRV, 0);
 
-                if (prev_prv != PRIV)
+                if (prev_prv != PRIV && CSR[RV_CSR_SATP] != 0)
                     etiss_icache_flush();
 
                 s = set_field(s, RV_MSTATUS_MIE, get_field(s, RV_MSTATUS_MPIE));
