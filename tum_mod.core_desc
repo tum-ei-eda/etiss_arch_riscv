@@ -41,7 +41,7 @@ InstructionSet tum_ret extends RISCVBase {
     }
 
     functions {
-        extern void etiss_icache_flush() [[ etiss_needs_simloop_return ]];
+        extern void etiss_icache_flush() [[ etiss_needs_simloop_return ]] [[ etiss_needs_arch ]];
 
         unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
             return (reg & mask) / (mask & ~(mask << 1));
