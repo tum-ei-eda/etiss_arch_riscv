@@ -137,6 +137,13 @@ InstructionSet tum_ret extends RISCVBase {
                 PRIV = prev_prv;
             }
         }
+
+        ECALL [[no_cont]] {
+            encoding: 0b000000000000 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
+            behavior: {
+                raise(0, RV_CAUSE_USER_ECALL + PRIV);
+            }
+        }
     }
 }
 
