@@ -26,7 +26,7 @@ Core RV32IMACFDXCoreV provides RV32I, tum_ret, tum_csr, tum_rva, tum_semihosting
         CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
     }
 }
-
+/*
 Core RV64IMACFD provides RV64I, RV64IC, RV64M, RV64F, RV64D, RV32DC,  RV64A, Zifencei, tum_ret, tum_csr, tum_rva64, tum_semihosting {
     architectural_state {
         CSR[0x000] = 0x0000000B; // ustatus
@@ -42,3 +42,4 @@ Core RV64IMACFD provides RV64I, RV64IC, RV64M, RV64F, RV64D, RV32DC,  RV64A, Zif
         CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
     }
 }
+*/
