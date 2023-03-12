@@ -1,4 +1,5 @@
 *.pickle
 **/gen_model
 **/gen_output
+# **/gen_patches
 .vscode
