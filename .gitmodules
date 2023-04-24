@@ -1,3 +1,4 @@
 [submodule "rv_base"]
 	path = rv_base
 	url = ../RISCV_ISA_CoreDSL
+  branch = xcorev
