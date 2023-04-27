@@ -8,7 +8,7 @@ import "rv_base/XCoreV.core_desc"
 import "tum_mod.core_desc"
 
 
-Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, XCoreVMac, tum_ret, tum_csr, tum_rva, tum_semihosting {
+Core RV32IMACFDXCoreV provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, XCoreV, tum_ret, tum_csr, tum_rva, tum_semihosting {
 // Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, XCoreV, tum_ret, tum_csr, tum_rva, tum_semihosting {
 // Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, tum_ret, tum_csr, tum_rva, tum_semihosting {
 // Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, XCoreV, tum_ret, tum_rva, tum_semihosting {
