@@ -4,7 +4,7 @@ import "rv_base/RVM.core_desc"
 import "rv_base/RVC.core_desc"
 import "rv_base/RVD.core_desc"
 import "rv_base/RVF.core_desc"
-import "rv_base/XCoreV.core_desc"
+import "rv_base/xcorev/XCoreV.core_desc"
 import "tum_mod.core_desc"
 
 
