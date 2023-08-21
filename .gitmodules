@@ -2,3 +2,6 @@
 	path = rv_base
 	url = ../RISCV_ISA_CoreDSL
   branch = xcorev
+[submodule "rv_xcorev"]
+	path = rv_xcorev
+	url = https://github.com/tum-ei-eda/CoreV_ISA_CoreDSL.git
