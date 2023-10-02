@@ -57,22 +57,22 @@ InstructionSet tum_ret extends RISCVBase {
                 CSR[RV_CSR_SEPC] = epc;
                 CSR[RV_CSR_SCAUSE] = mcause;
 
-                unsigned<XLEN> s = CSR[RV_CSR_SSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_SSTATUS);
                 s = set_field(s, RV_MSTATUS_SPIE, get_field(s, RV_MSTATUS_SIE));
                 s = set_field(s, RV_MSTATUS_SPP, PRIV);
                 s = set_field(s, RV_MSTATUS_SIE, 0);
-                CSR[RV_CSR_SSTATUS] = s;
+                csr_write(RV_CSR_SSTATUS, s);
                 PRIV = RV_PRV_S;
             } else {    // handle in M-MODE
                 PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1);
                 CSR[RV_CSR_MEPC] = epc;
                 CSR[RV_CSR_MCAUSE] = mcause;
 
-                unsigned<XLEN> s = CSR[RV_CSR_MSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_MSTATUS);
                 s = set_field(s, RV_MSTATUS_MPIE, get_field(s, RV_MSTATUS_MIE));
                 s = set_field(s, RV_MSTATUS_MPP, PRIV);
                 s = set_field(s, RV_MSTATUS_MIE, 0);
-                CSR[RV_CSR_MSTATUS] = s;
+                csr_write(RV_CSR_MSTATUS, s);
                 PRIV = RV_PRV_M;
             }
         }
@@ -101,7 +101,7 @@ InstructionSet tum_ret extends RISCVBase {
 
                 PC = CSR[RV_CSR_MEPC];
 
-                unsigned<XLEN> s = CSR[RV_CSR_MSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_MSTATUS);
 
                 unsigned<XLEN> prev_prv = get_field(s, RV_MSTATUS_MPP);
 
@@ -112,7 +112,7 @@ InstructionSet tum_ret extends RISCVBase {
                 s = set_field(s, RV_MSTATUS_MPIE, 1);
                 s = set_field(s, RV_MSTATUS_MPP, extension_enabled('U') ? RV_PRV_U : RV_PRV_M);
 
-                CSR[RV_CSR_MSTATUS] = s;
+                csr_write(RV_CSR_MSTATUS, s);
                 PRIV = prev_prv;
             }
         }
@@ -120,12 +120,12 @@ InstructionSet tum_ret extends RISCVBase {
         SRET [[no_cont]] {
             encoding: 7'b0001000 :: 5'b00010 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
-                if (PRIV < (get_field(CSR[RV_CSR_MSTATUS], RV_MSTATUS_TSR) ? RV_PRV_M : RV_PRV_S))
+                if (PRIV < (get_field(csr_read(RV_CSR_MSTATUS), RV_MSTATUS_TSR) ? RV_PRV_M : RV_PRV_S))
                     raise(0, RV_CAUSE_ILLEGAL_INSTRUCTION);
 
                 PC = CSR[RV_CSR_SEPC];
 
-                unsigned<XLEN> s = CSR[RV_CSR_SSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_SSTATUS);
 
                 unsigned<XLEN> prev_prv = get_field(s, RV_MSTATUS_SPP);
 
@@ -133,7 +133,7 @@ InstructionSet tum_ret extends RISCVBase {
                 s = set_field(s, RV_MSTATUS_SPIE, 1);
                 s = set_field(s, RV_MSTATUS_SPP, RV_PRV_U);
 
-                CSR[RV_CSR_MSTATUS] = s;
+                csr_write(RV_CSR_MSTATUS, s);
                 PRIV = prev_prv;
             }
         }
