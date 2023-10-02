@@ -52,8 +52,20 @@ InstructionSet tum_ret extends RISCVBase {
         void raise(int irq, unsigned<XLEN> mcause) [[ etiss_trap_entry_fn ]] {
             unsigned<XLEN> epc = PC;
 
-            if (PRIV <= RV_PRV_S && (CSR[RV_CSR_MEDELEG] >> mcause) & 1) { // handle in S-MODE
-                PC = (CSR[RV_CSR_STVEC] & ~(unsigned<XLEN>)1);
+            unsigned<XLEN> deleg, vector, bit = mcause;
+
+            int irq2 = (mcause & ((unsigned<XLEN>)1 << (XLEN - 1))) != 0;
+
+            if (irq2) {
+                deleg = (PRIV <= RV_PRV_S) ? CSR[RV_CSR_MIDELEG] : 0;
+                bit &= ((unsigned<XLEN>)1 << (XLEN - 1)) - 1;
+            } else {
+                deleg = (PRIV <= RV_PRV_S) ? CSR[RV_CSR_MEDELEG] : 0;
+            }
+
+            if (PRIV <= RV_PRV_S && (deleg >> bit) & 1) { // handle in S-MODE
+                vector = (CSR[RV_CSR_STVEC] & 1) && irq2 ? bit * 4 : 0;
+                PC = (CSR[RV_CSR_STVEC] & ~(unsigned<XLEN>)1) + vector;
                 CSR[RV_CSR_SEPC] = epc;
                 CSR[RV_CSR_SCAUSE] = mcause;
 
@@ -63,8 +75,10 @@ InstructionSet tum_ret extends RISCVBase {
                 s = set_field(s, RV_MSTATUS_SIE, 0);
                 csr_write(RV_CSR_SSTATUS, s);
                 PRIV = RV_PRV_S;
+
             } else {    // handle in M-MODE
-                PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1);
+                vector = (CSR[RV_CSR_MTVEC] & 1) && irq2 ? bit * 4 : 0;
+                PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1) + vector;
                 CSR[RV_CSR_MEPC] = epc;
                 CSR[RV_CSR_MCAUSE] = mcause;
 
