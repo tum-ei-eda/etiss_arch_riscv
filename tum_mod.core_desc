@@ -309,7 +309,7 @@ InstructionSet tum_csr extends Zicsr {
                 if (extension_enabled('X'))
                     mask |= RV_MSTATUS_XS;
 
-                if (XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31) || XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60))
+                if ((XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31)) || (XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60)))
                     mask |= RV_MSTATUS_SUM;
             }
 
@@ -332,7 +332,7 @@ InstructionSet tum_csr extends Zicsr {
             if (csr == RV_CSR_INSTRET) return etiss_get_instret();
             if (csr == RV_CSR_INSTRETH) return etiss_get_instret() >> 32;
             if (csr == RV_CSR_MSTATUS || csr == RV_CSR_SSTATUS) return CSR[RV_CSR_MSTATUS] | (RV_MSTATUS_UXL & (RV_MSTATUS_UXL << 1)) | (RV_MSTATUS_SXL & (RV_MSTATUS_SXL << 1));
-            if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 2:0];
+            if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 3:0];
 
             return CSR[csr];
         }
