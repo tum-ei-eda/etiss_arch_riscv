@@ -266,6 +266,20 @@ InstructionSet tum_ret extends RISCVBase {
             }
         }
     }
+
+    always {
+        pc_inc {
+            PC = PC + __encoding_size;
+        }
+
+        /*
+         * currently unused, irqs are checked with etiss plugin
+
+        irq_check [[ etiss_always_at_block_only ]] {
+            check_irq();
+        }
+        */
+    }
 }
 
 InstructionSet tum_csr extends Zicsr {
