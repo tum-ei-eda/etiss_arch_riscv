@@ -258,6 +258,13 @@ InstructionSet tum_ret extends RISCVBase {
                 raise(0, RV_CAUSE_USER_ECALL + PRIV);
             }
         }
+
+        WFI [[ no_cont ]] {
+            encoding: 7'b0001000 :: 5'b00101 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
+            behavior: {
+
+            }
+        }
     }
 }
 
