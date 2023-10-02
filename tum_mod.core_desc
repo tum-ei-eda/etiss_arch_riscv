@@ -561,3 +561,132 @@ InstructionSet tum_sfence extends RV32I {
         }
     }
 }
+
+InstructionSet tum_mmu extends RISCVBase {
+    architectural_state {
+        const int RV_PGSHIFT = 12;
+
+        const int RV_SATP32_MODE = 0x80000000;
+        const int RV_SATP32_ASID = 0x7FC00000;
+        const int RV_SATP32_PPN = 0x003FFFFF;
+        const int RV_SATP64_MODE = 0xF000000000000000;
+        const int RV_SATP64_ASID = 0x0FFFF00000000000;
+        const int RV_SATP64_PPN = 0x00000FFFFFFFFFFF;
+
+        const int RV_SATP_MODE_OFF = 0;
+        const int RV_SATP_MODE_SV32 = 1;
+        const int RV_SATP_MODE_SV39 = 8;
+        const int RV_SATP_MODE_SV48 = 9;
+        const int RV_SATP_MODE_SV57 = 10;
+        const int RV_SATP_MODE_SV64 = 11;
+
+        const int RV_PTE_V = 0x001;
+        const int RV_PTE_R = 0x002;
+        const int RV_PTE_W = 0x004;
+        const int RV_PTE_X = 0x008;
+        const int RV_PTE_U = 0x010;
+        const int RV_PTE_G = 0x020;
+        const int RV_PTE_A = 0x040;
+        const int RV_PTE_D = 0x080;
+        const int RV_PTE_SOFT = 0x300;
+        const int RV_PTE_RSVD = 0x1FC0000000000000;
+        const int RV_PTE_PBMT = 0x6000000000000000;
+        const int RV_PTE_N = 0x8000000000000000;
+        const int RV_PTE_ATTR = 0xFFC0000000000000;
+
+        const int RV_PTE_PPN_SHIFT = 10;
+
+        enum access_type_t {
+            LOAD,
+            STORE,
+            FETCH
+        };
+    }
+
+    functions {
+        unsigned<XLEN> walk(unsigned<XLEN> va, unsigned<8> access_type) {
+            unsigned<XLEN> page_mask = ((unsigned<XLEN>)1 << RV_PGSHIFT) - 1;
+            unsigned<XLEN> satp = csr_read(RV_CSR_SATP);
+
+            bool s_mode = PRIV == RV_PRV_S;
+            bool sum = csr_read(RV_CSR_SSTATUS) & RV_MSTATUS_SUM;
+            bool mxr = csr_read(RV_CSR_SSTATUS) & RV_MSTATUS_MXR;
+
+            // adapted from decode_vm_info
+            int levels = 0;     // nested page table depth
+            int idxbits = 0;    // # of index bits in pte
+            int ptbase = 0;     // page table base address
+            int ptesize = 0;    // pte word size
+
+            if (PRIV <= RV_PRV_S) {
+                if (XLEN == 32) {
+                    int mode = get_field(satp, RV_SATP32_MODE);
+                    if (mode == RV_SATP_MODE_SV32) {
+                        levels = 2;
+                        idxbits = 10;
+                        ptesize = 4;
+                        ptbase = (satp & RV_SATP32_PPN) << RV_PGSHIFT;
+                    }
+                } else if (XLEN == 64) {
+                    int mode = get_field(satp, RV_SATP64_MODE);
+                    if (mode != RV_SATP_MODE_OFF) {
+                        levels = mode - (RV_SATP_MODE_SV39 - 3);
+                        idxbits = 9;
+                        ptesize = 8;
+                        ptbase = (satp & RV_SATP64_PPN) << RV_PGSHIFT;
+                    }
+                }
+            }
+
+            if (levels == 0)
+                return va;
+
+            // TODO: add addr MSB verification
+
+            for (int i = levels - 1; i >= 0; i-=1) {
+                int ptshift = i * idxbits;
+                unsigned<XLEN> idx = (va >> (RV_PGSHIFT + ptshift)) & ((1 << idxbits) - 1);
+
+                // TODO: access errors here need to be translated to be pagefaults
+                unsigned<XLEN> pte = MEM[ptbase + idx * ptesize];
+                unsigned<XLEN> ppn = (pte & ~RV_PTE_ATTR) >> RV_PTE_PPN_SHIFT;
+
+                if (pte & RV_PTE_RSVD)
+                    break;
+
+                else if (pte & RV_PTE_N)
+                    break;
+
+                else if (pte & RV_PTE_PBMT)
+                    break;
+
+                else if ((pte & (RV_PTE_V | RV_PTE_R | RV_PTE_W | RV_PTE_X)) == RV_PTE_V) {
+                    if (pte & (RV_PTE_D | RV_PTE_A | RV_PTE_U | RV_PTE_N | RV_PTE_PBMT))
+                        break;
+
+                    ptbase = ppn << RV_PGSHIFT;
+                }
+
+                //else if (type == 2 ? !(pte & RV_PTE_X) : type == 0  ? !(pte & RV_PTE_R) && !(mxr && (pte & RV_PTE_X)) : type == 1 ? !((pte & RV_PTE_R) && (pte & RV_PTE_W)))
+                //    break;
+
+                else if ((pte & RV_PTE_U) ? s_mode && (access_type == 2 || !sum) : !s_mode)
+                    break;
+
+                else {
+                    if (pte & (RV_PTE_A | ((access_type == 1) * RV_PTE_D)))
+                        break;
+
+                    unsigned<XLEN> vpn = va >> RV_PGSHIFT;
+                    unsigned<XLEN> page_base = (ppn | (vpn & ((1 << ptshift) - 1))) << RV_PGSHIFT;
+                    unsigned<XLEN> phys = page_base | (va & page_mask);
+                    return phys;
+                }
+            }
+
+            if (access_type == 2) raise(0, RV_CAUSE_FETCH_PAGE_FAULT);
+            else if (access_type == 0) raise(0, RV_CAUSE_LOAD_PAGE_FAULT);
+            else if (access_type == 1) raise(0, RV_CAUSE_STORE_PAGE_FAULT);
+        }
+    }
+}
