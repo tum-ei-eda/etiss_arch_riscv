@@ -283,6 +283,12 @@ InstructionSet tum_ret extends RISCVBase {
 }
 
 InstructionSet tum_csr extends Zicsr {
+    architectural_state {
+        unsigned<XLEN>& MSTATUS [[ etiss_is_global_irq_en=0xf ]] = CSR[RV_CSR_MSTATUS];
+        unsigned<XLEN>& MIE [[ etiss_is_irq_en ]] = CSR[RV_CSR_MIE];
+        unsigned<XLEN>& MIP [[ etiss_is_irq_pending ]] = CSR[RV_CSR_MIP];
+    }
+
     functions {
         extern unsigned<64> etiss_get_cycles() [[ etiss_needs_arch ]];
         extern unsigned<64> etiss_get_time();
