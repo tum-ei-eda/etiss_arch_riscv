@@ -51,36 +51,89 @@ InstructionSet tum_ret extends RISCVBase {
             return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
         }
 
-        void raise(int irq, int mcause) [[ etiss_trap_entry_fn ]] {
+        unsigned<8> ctz(unsigned<64> val) {
+            if (!val)
+                return 0;
+
+            unsigned<8> res = 0;
+
+            if ((val << 32) == 0) {
+                res += 32;
+                val >>= 32;
+            }
+
+            if ((val << 48) == 0) {
+                res += 16;
+                val >>= 16;
+            }
+
+            if ((val << 56) == 0) {
+                res += 8;
+                val >>= 8;
+            }
+
+            if ((val << 60) == 0) {
+                res += 4;
+                val >>= 4;
+            }
+
+            if ((val << 62) == 0) {
+                res += 2;
+                val >>= 2;
+            }
+
+            if ((val << 63) == 0) {
+                res += 1;
+                val >>= 1;
+            }
+
+            return res;
+        }
+
+        void raise(int irq, unsigned<XLEN> mcause) [[ etiss_trap_entry_fn ]] {
             unsigned<XLEN> epc = PC;
 
-            if (PRIV <= RV_PRV_S && (CSR[RV_CSR_MEDELEG] >> mcause) & 1) { // handle in S-MODE
-                PC = (CSR[RV_CSR_STVEC] & ~(unsigned<XLEN>)1);
+            unsigned<XLEN> deleg, vector, bit = mcause;
+
+            int irq2 = (mcause & ((unsigned<XLEN>)1 << (XLEN - 1))) != 0;
+
+            if (irq2) {
+                deleg = (PRIV <= RV_PRV_S) ? CSR[RV_CSR_MIDELEG] : 0;
+                bit &= ((unsigned<XLEN>)1 << (XLEN - 1)) - 1;
+            } else {
+                deleg = (PRIV <= RV_PRV_S) ? CSR[RV_CSR_MEDELEG] : 0;
+            }
+
+            if (PRIV <= RV_PRV_S && (deleg >> bit) & 1) { // handle in S-MODE
+                vector = (CSR[RV_CSR_STVEC] & 1) && irq2 ? bit * 4 : 0;
+                PC = (CSR[RV_CSR_STVEC] & ~(unsigned<XLEN>)1) + vector;
                 CSR[RV_CSR_SEPC] = epc;
                 CSR[RV_CSR_SCAUSE] = mcause;
 
-                unsigned<XLEN> s = CSR[RV_CSR_SSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_SSTATUS);
                 s = set_field(s, RV_MSTATUS_SPIE, get_field(s, RV_MSTATUS_SIE));
                 s = set_field(s, RV_MSTATUS_SPP, PRIV);
                 s = set_field(s, RV_MSTATUS_SIE, 0);
-                CSR[RV_CSR_SSTATUS] = s;
+                csr_write(RV_CSR_SSTATUS, s);
                 PRIV = RV_PRV_S;
+
             } else {    // handle in M-MODE
-                PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1);
+                vector = (CSR[RV_CSR_MTVEC] & 1) && irq2 ? bit * 4 : 0;
+                PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1) + vector;
                 CSR[RV_CSR_MEPC] = epc;
                 CSR[RV_CSR_MCAUSE] = mcause;
 
-                unsigned<XLEN> s = CSR[RV_CSR_MSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_MSTATUS);
                 s = set_field(s, RV_MSTATUS_MPIE, get_field(s, RV_MSTATUS_MIE));
                 s = set_field(s, RV_MSTATUS_MPP, PRIV);
                 s = set_field(s, RV_MSTATUS_MIE, 0);
-                CSR[RV_CSR_MSTATUS] = s;
+                csr_write(RV_CSR_MSTATUS, s);
                 PRIV = RV_PRV_M;
             }
         }
 
         void translate_exc_code(int cause) [[ etiss_trap_translate_fn=MEM ]] {
-            int code = 0;
+            unsigned<XLEN> code = 0;
 
             if (cause == ETISS_RETURNCODE_CPUFINISHED) return;
             else if (cause == ETISS_RETURNCODE_DBUS_READ_ERROR) code = RV_CAUSE_LOAD_ACCESS;
@@ -89,9 +142,70 @@ InstructionSet tum_ret extends RISCVBase {
             else if (cause == ETISS_RETURNCODE_DBUS_WRITE_ERROR) code = RV_CAUSE_STORE_ACCESS;
             else if (cause == ETISS_RETURNCODE_STORE_PAGEFAULT) code = RV_CAUSE_STORE_PAGE_FAULT;
             else if (cause == ETISS_RETURNCODE_IBUS_READ_ERROR) code = RV_CAUSE_FETCH_ACCESS;
+            else if (cause == ETISS_RETURNCODE_INTERRUPT) {
+                code = calc_irq_mcause();
+                if (!code) return;
+            }
             else code = RV_CAUSE_ILLEGAL_INSTRUCTION;
 
             raise(0, code);
+        }
+
+        unsigned<XLEN> calc_irq_mcause() {
+            unsigned<XLEN> pending_interrupts = CSR[RV_CSR_MIE] & CSR[RV_CSR_MIP];
+
+            if (!pending_interrupts) return 0;
+
+            unsigned<XLEN> mie = get_field(CSR[RV_CSR_MSTATUS], RV_MSTATUS_MIE);
+            unsigned<XLEN> m_enabled = PRIV < RV_PRV_M || (PRIV == RV_PRV_M && mie);
+            unsigned<XLEN> enabled_interrupts = pending_interrupts & ~CSR[RV_CSR_MIDELEG] & -m_enabled;
+
+            if (enabled_interrupts == 0) {
+                unsigned<XLEN> deleg = CSR[RV_CSR_MIDELEG];
+                unsigned<XLEN> sie = get_field(csr_read(RV_CSR_SSTATUS), RV_MSTATUS_SIE);
+                unsigned<XLEN> s_enabled = PRIV < RV_PRV_S || (PRIV == RV_PRV_S && sie);
+                enabled_interrupts = pending_interrupts & deleg & -s_enabled;
+            }
+
+            if (enabled_interrupts) {
+                // nonstandard interrupts have highest priority
+                if (enabled_interrupts >> (RV_IRQ_M_EXT + 1))
+                    enabled_interrupts = enabled_interrupts >> (RV_IRQ_M_EXT + 1) << (RV_IRQ_M_EXT + 1);
+
+                // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
+                else if (enabled_interrupts & RV_MIP_MEIP)
+                    enabled_interrupts = RV_MIP_MEIP;
+                else if (enabled_interrupts & RV_MIP_MSIP)
+                    enabled_interrupts = RV_MIP_MSIP;
+                else if (enabled_interrupts & RV_MIP_MTIP)
+                    enabled_interrupts = RV_MIP_MTIP;
+                else if (enabled_interrupts & RV_MIP_SEIP)
+                    enabled_interrupts = RV_MIP_SEIP;
+                else if (enabled_interrupts & RV_MIP_SSIP)
+                    enabled_interrupts = RV_MIP_SSIP;
+                else if (enabled_interrupts & RV_MIP_STIP)
+                    enabled_interrupts = RV_MIP_STIP;
+                else if (enabled_interrupts & RV_MIP_LCOFIP)
+                    enabled_interrupts = RV_MIP_LCOFIP;
+                else if (enabled_interrupts & RV_MIP_VSEIP)
+                   enabled_interrupts = RV_MIP_VSEIP;
+                else if (enabled_interrupts & RV_MIP_VSSIP)
+                    enabled_interrupts = RV_MIP_VSSIP;
+                else if (enabled_interrupts & RV_MIP_VSTIP)
+                    enabled_interrupts = RV_MIP_VSTIP;
+                else
+                    return 0;
+
+                return ((unsigned<XLEN>)1 << (XLEN - 1)) | ctz(enabled_interrupts);
+            }
+
+            return 0;
+        }
+
+        void check_irq() {
+            unsigned<XLEN> irq_mcause = calc_irq_mcause();
+            if (irq_mcause)
+                raise(1, irq_mcause);
         }
     }
 
@@ -104,7 +218,7 @@ InstructionSet tum_ret extends RISCVBase {
 
                 PC = CSR[RV_CSR_MEPC];
 
-                unsigned<XLEN> s = CSR[RV_CSR_MSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_MSTATUS);
 
                 unsigned<XLEN> prev_prv = get_field(s, RV_MSTATUS_MPP);
 
@@ -118,7 +232,7 @@ InstructionSet tum_ret extends RISCVBase {
                 s = set_field(s, RV_MSTATUS_MPIE, 1);
                 s = set_field(s, RV_MSTATUS_MPP, extension_enabled('U') ? RV_PRV_U : RV_PRV_M);
 
-                CSR[RV_CSR_MSTATUS] = s;
+                csr_write(RV_CSR_MSTATUS, s);
                 PRIV = prev_prv;
             }
         }
@@ -126,12 +240,12 @@ InstructionSet tum_ret extends RISCVBase {
         SRET [[no_cont]] {
             encoding: 7'b0001000 :: 5'b00010 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
-                if (PRIV < (get_field(CSR[RV_CSR_MSTATUS], RV_MSTATUS_TSR) ? RV_PRV_M : RV_PRV_S))
+                if (PRIV < (get_field(csr_read(RV_CSR_MSTATUS), RV_MSTATUS_TSR) ? RV_PRV_M : RV_PRV_S))
                     raise(0, RV_CAUSE_ILLEGAL_INSTRUCTION);
 
                 PC = CSR[RV_CSR_SEPC];
 
-                unsigned<XLEN> s = CSR[RV_CSR_SSTATUS];
+                unsigned<XLEN> s = csr_read(RV_CSR_SSTATUS);
 
                 unsigned<XLEN> prev_prv = get_field(s, RV_MSTATUS_SPP);
 
@@ -139,7 +253,7 @@ InstructionSet tum_ret extends RISCVBase {
                 s = set_field(s, RV_MSTATUS_SPIE, 1);
                 s = set_field(s, RV_MSTATUS_SPP, RV_PRV_U);
 
-                CSR[RV_CSR_MSTATUS] = s;
+                csr_write(RV_CSR_MSTATUS, s);
                 PRIV = prev_prv;
             }
         }
@@ -150,10 +264,37 @@ InstructionSet tum_ret extends RISCVBase {
                 raise(0, RV_CAUSE_USER_ECALL + PRIV);
             }
         }
+
+        WFI [[ no_cont ]] {
+            encoding: 7'b0001000 :: 5'b00101 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
+            behavior: {
+
+            }
+        }
+    }
+
+    always {
+        pc_inc {
+            PC = PC + __encoding_size;
+        }
+
+        /*
+         * currently unused, irqs are checked with etiss plugin
+
+        irq_check [[ etiss_always_at_block_only ]] {
+            check_irq();
+        }
+        */
     }
 }
 
 InstructionSet tum_csr extends Zicsr {
+    architectural_state {
+        unsigned<XLEN>& MSTATUS [[ etiss_is_global_irq_en=0xf ]] = CSR[RV_CSR_MSTATUS];
+        unsigned<XLEN>& MIE [[ etiss_is_irq_en ]] = CSR[RV_CSR_MIE];
+        unsigned<XLEN>& MIP [[ etiss_is_irq_pending ]] = CSR[RV_CSR_MIP];
+    }
+
     functions {
         // black-box function to communicate SATP-changes to MMU
         extern signed<32> ETISS_SIGNAL_MMU(unsigned<XLEN> mmu_signal_) [[etiss_needs_arch]];
@@ -177,7 +318,7 @@ InstructionSet tum_csr extends Zicsr {
                 if (extension_enabled('X'))
                     mask |= RV_MSTATUS_XS;
 
-                if (XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31) || XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60))
+                if ((XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31)) || (XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60)))
                     mask |= RV_MSTATUS_SUM;
             }
 
@@ -200,7 +341,7 @@ InstructionSet tum_csr extends Zicsr {
             if (csr == RV_CSR_INSTRET) return etiss_get_instret();
             if (csr == RV_CSR_INSTRETH) return etiss_get_instret() >> 32;
             if (csr == RV_CSR_MSTATUS || csr == RV_CSR_SSTATUS) return CSR[RV_CSR_MSTATUS] | (RV_MSTATUS_UXL & (RV_MSTATUS_UXL << 1)) | (RV_MSTATUS_SXL & (RV_MSTATUS_SXL << 1));
-            if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 2:0];
+            if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 3:0];
 
             return CSR[csr];
         }

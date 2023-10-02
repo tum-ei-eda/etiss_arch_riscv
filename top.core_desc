@@ -7,7 +7,7 @@ import "rv_base/RVF.core_desc"
 import "tum_mod.core_desc"
 
 
-Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, tum_ret, tum_csr, tum_rva, tum_semihosting {
+Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
     architectural_state {
         CSR[0x000] = 0x0000000B; // ustatus
         CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
@@ -23,7 +23,7 @@ Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zif
     }
 }
 
-Core RV64IMACFD provides RV64I, RV64IC, RV64M, RV64F, RV64D, RV32DC,  RV64A, Zifencei, tum_ret, tum_csr, tum_rva64, tum_semihosting, tum_sfence {
+Core RV64IMACFD provides RV64I, RV64IC, RV64M, RV64F, RV64D, RV32DC, RV64A, Zifencei, tum_csr, tum_ret, tum_rva64, tum_semihosting {
     architectural_state {
         CSR[0x000] = 0x0000000B; // ustatus
         CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
