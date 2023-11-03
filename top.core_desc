@@ -5,6 +5,7 @@ import "rv_base/RVC.core_desc"
 import "rv_base/RVD.core_desc"
 import "rv_base/RVF.core_desc"
 import "tum_mod.core_desc"
+import "tum_rva.core_desc"
 
 
 Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
