@@ -41,6 +41,7 @@ InstructionSet tum_ret extends RISCVBase {
 
     functions {
         unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
+            if (!mask) return 0;
             return (reg & mask) / (mask & ~(mask << 1));
         }
 
