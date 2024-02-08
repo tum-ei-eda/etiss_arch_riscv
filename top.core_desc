@@ -1,5 +1,4 @@
-import "rv_base/RV32I.core_desc"
-import "rv_base/RV64I.core_desc"
+import "rv_base/RVI.core_desc"
 import "rv_base/RVM.core_desc"
 import "rv_base/RVC.core_desc"
 import "rv_base/RVD.core_desc"

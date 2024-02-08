@@ -1,5 +1,5 @@
 import "rv_base/RISCVBase.core_desc"
-import "rv_base/RV32I.core_desc"
+import "rv_base/RVI.core_desc"
 
 InstructionSet tum_ret extends RISCVBase {
     architectural_state {
