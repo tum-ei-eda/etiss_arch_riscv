@@ -6,6 +6,7 @@ import "rv_base/RVF.core_desc"
 import "rv_base/Zb.core_desc"
 import "rv_base/Zc.core_desc"
 import "rv_base/Zk.core_desc"
+import "rv_base/Zfh.core_desc"
 import "tum_mod.core_desc"
 import "tum_rva.core_desc"
 import "tum_rvm.core_desc"
@@ -60,6 +61,22 @@ Core RV32IMACFD_Zca_Zcb_Zcf_Zcd_Zcmp_Zcmt provides RV32I, RV32IC, RV32M, RV32F, 
 }
 
 Core RV32IMACFD_Zk provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, Zk, tum_csr, tum_ret, tum_rva, tum_semihosting {
+    architectural_state {
+        CSR[0x000] = 0x0000000B; // ustatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
+
+        CSR[RV_CSR_MISA] = 0x4014112D; // misa
+
+        CSR[0xC10] = 0x00000003;
+
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
+        CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
+    }
+}
+
+Core RV32IMACFD_Zfh provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zifencei, Zfh, tum_csr, tum_ret, tum_rva, tum_semihosting {
     architectural_state {
         CSR[0x000] = 0x0000000B; // ustatus
         CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
