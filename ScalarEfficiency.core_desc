@@ -1,0 +1,573 @@
+import "rv_base/RVI.core_desc"
+
+InstructionSet ScalarEfficiencyRV32 extends RV32I {
+    functions {
+        extern unsigned<XLEN> brev_xlen(unsigned<XLEN>);
+        extern unsigned<XLEN> clo_xlen(unsigned<XLEN>);
+        extern unsigned<XLEN> cto_xlen(unsigned<XLEN>);
+    }
+    instructions {
+        BEQI {
+            encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b000 :: simm12[4:0] :: 7'b1111011;
+            assembly: {"beqi", "{name(rs1)}, {simm12}, {simm5}"};
+            behavior: if (X[rs1] == (signed)(simm5)) {
+                PC = PC + ((signed)(simm12) << 1);
+            }
+        }
+        BNEI {
+            encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b001 :: simm12[4:0] :: 7'b1111011;
+            assembly: {"bnei", "{name(rs1)}, {simm12}, {simm5}"};
+            behavior: if (X[rs1] != (signed)(simm5)) {
+                PC = PC + ((signed)(simm12) << 1);
+            }
+        }
+        BLTI {
+            encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b010 :: simm12[4:0] :: 7'b1111011;
+            assembly: {"blti", "{name(rs1)}, {simm12}, {simm5}"};
+            behavior: if ((signed)((X[rs1])) < (signed)(simm5)) {
+                PC = PC + ((signed)(simm12) << 1);
+            }
+        }
+        BLTUI {
+            encoding: simm12[11:5] :: uimm5[4:0] :: rs1[4:0] :: 3'b011 :: simm12[4:0] :: 7'b1111011;
+            assembly: {"bltui", "{name(rs1)}, {simm12}, {uimm5}"};
+            behavior: if (X[rs1] < (unsigned)(uimm5)) {
+                PC = PC + ((signed)(simm12) << 1);
+            }
+        }
+        BGEI {
+            encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b100 :: simm12[4:0] :: 7'b1111011;
+            assembly: {"bgei", "{name(rs1)}, {simm12}, {simm5}"};
+            behavior: if ((signed)((X[rs1])) >= (signed)(simm5)) {
+                PC = PC + ((signed)(simm12) << 1);
+            }
+        }
+        BGEUI {
+            encoding: simm12[11:5] :: uimm5[4:0] :: rs1[4:0] :: 3'b101 :: simm12[4:0] :: 7'b1111011;
+            assembly: {"bgeui", "{name(rs1)}, {simm12}, {uimm5}"};
+            behavior: if (X[rs1] >= (unsigned)(uimm5)) {
+                PC = PC + ((signed)(simm12) << 1);
+            }
+        }
+        BEQZ_FAR {
+            encoding: simm17[16:5] :: rs1[4:0] :: 3'b110 :: simm17[4:0] :: 7'b1111011;
+            assembly: {"beqz.far", "{name(rs1)}, {simm17}"};
+            behavior: if (X[rs1] == 0) {
+                PC = PC + ((signed)(simm17) << 1);
+            }
+        }
+        BNEZ_FAR {
+            encoding: simm17[16:5] :: rs1[4:0] :: 3'b111 :: simm17[4:0] :: 7'b1111011;
+            assembly: {"bnez.far", "{name(rs1)}, {simm17}"};
+            behavior: if (X[rs1] != 0) {
+                PC = PC + ((signed)(simm17) << 1);
+            }
+        }
+        BLTZ_FAR {
+            encoding: simm17[16:5] :: rs1[4:0] :: 3'b000 :: simm17[4:0] :: 7'b1011011;
+            assembly: {"bltz.far", "{name(rs1)}, {simm17}"};
+            behavior: if ((signed)((X[rs1])) < 0) {
+                PC = PC + ((signed)(simm17) << 1);
+            }
+        }
+        BGEZ_FAR {
+            encoding: simm17[16:5] :: rs1[4:0] :: 3'b001 :: simm17[4:0] :: 7'b1011011;
+            assembly: {"bgez.far", "{name(rs1)}, {simm17}"};
+            behavior: if ((signed)((X[rs1])) >= 0) {
+                PC = PC + ((signed)(simm17) << 1);
+            }
+        }
+        CSELEQZ {
+            encoding: 7'b0000000 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cseleqz", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = (X[rd] == 0) ? X[rs1] : X[rs2];
+        }
+        CSELNEZ {
+            encoding: 7'b0000001 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cselnez", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = (X[rd] != 0) ? X[rs1] : X[rs2];
+        }
+        CSELLTZ {
+            encoding: 7'b0000010 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cselltz", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = ((signed)((X[rd])) < 0) ? X[rs1] : X[rs2];
+        }
+        CSELGEZ {
+            encoding: 7'b0000011 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cselgez", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = ((signed)((X[rd])) >= 0) ? X[rs1] : X[rs2];
+        }
+        CSELEQZI {
+            encoding: 7'b0000100 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cseleqzi", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = (X[rd] == 0) ? X[rs1] : (unsigned)(imm5);
+        }
+        CMOVEQ {
+            encoding: 7'b0000101 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmoveq", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = (X[rd] == X[rs1]) ? X[rs2] : X[rd];
+        }
+        CMOVNE {
+            encoding: 7'b0000110 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovne", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = (X[rd] != X[rs1]) ? X[rs2] : X[rd];
+        }
+        CMOVLT {
+            encoding: 7'b0000111 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovlt", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = ((signed)((X[rd])) < (signed)((X[rs1]))) ? X[rs2] : X[rd];
+        }
+        CMOVLTU {
+            encoding: 7'b0001000 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovltu", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = (X[rd] < X[rs1]) ? X[rs2] : X[rd];
+        }
+        CMOVGE {
+            encoding: 7'b0001001 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovge", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = ((signed)((X[rd])) >= (signed)((X[rs1]))) ? X[rs2] : X[rd];
+        }
+        CMOVGEU {
+            encoding: 7'b0001010 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovgeu", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+            behavior: X[rd] = (X[rd] >= X[rs1]) ? X[rs2] : X[rd];
+        }
+        CMOVEQ_RI {
+            encoding: 7'b0001011 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmoveq.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = (X[rd] == X[rs1]) ? (unsigned)(imm5) : X[rd];
+        }
+        CMOVNE_RI {
+            encoding: 7'b0001100 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovne.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = (X[rd] != X[rs1]) ? (unsigned)(imm5) : X[rd];
+        }
+        CMOVLT_RI {
+            encoding: 7'b0001101 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovlt.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = ((signed)((X[rd])) < (signed)((X[rs1]))) ? (unsigned)(imm5) : X[rd];
+        }
+        CMOVLTU_RI {
+            encoding: 7'b0001110 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovltu.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = (X[rd] < X[rs1]) ? (unsigned)(imm5) : X[rd];
+        }
+        CMOVGE_RI {
+            encoding: 7'b0001111 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovge.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = ((signed)((X[rd])) >= (signed)((X[rs1]))) ? (unsigned)(imm5) : X[rd];
+        }
+        CMOVGEU_RI {
+            encoding: 7'b0010000 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovgeu.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = (X[rd] >= X[rs1]) ? (unsigned)(imm5) : X[rd];
+        }
+        CMOVEQ_IR {
+            encoding: 7'b0010001 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmoveq.ir", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = (X[rd] == (unsigned)(imm5)) ? X[rs1] : X[rd];
+        }
+        CMOVNE_IR {
+            encoding: 7'b0010010 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovne.ir", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = (X[rd] != (unsigned)(imm5)) ? X[rs1] : X[rd];
+        }
+        CMOVLT_IR {
+            encoding: 7'b0010011 :: simm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovlt.ir", "{name(rd)}, {name(rs1)}, {simm5}"};
+            behavior: X[rd] = ((signed)((X[rd])) < (signed)(simm5)) ? X[rs1] : X[rd];
+        }
+        CMOVLTU_IR {
+            encoding: 7'b0010100 :: uimm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovltu.ir", "{name(rd)}, {name(rs1)}, {uimm5}"};
+            behavior: X[rd] = (X[rd] < (unsigned)(uimm5)) ? X[rs1] : X[rd];
+        }
+        CMOVGE_IR {
+            encoding: 7'b0010101 :: simm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovge.ir", "{name(rd)}, {name(rs1)}, {simm5}"};
+            behavior: X[rd] = ((signed)((X[rd])) >= (signed)(simm5)) ? X[rs1] : X[rd];
+        }
+        CMOVGEU_IR {
+            encoding: 7'b0010110 :: uimm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovgeu.ir", "{name(rd)}, {name(rs1)}, {uimm5}"};
+            behavior: X[rd] = (X[rd] >= (unsigned)(uimm5)) ? X[rs1] : X[rd];
+        }
+        CMOVEQ_II {
+            encoding: 7'b0010111 :: imm5_2[4:0] :: imm5[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmoveq.ii", "{name(rd)}, {imm5}, {imm5_2}"};
+            behavior: X[rd] = (X[rd] == (unsigned)(imm5)) ? (unsigned)((unsigned)(imm5_2)) : X[rd];
+        }
+        CMOVNE_II {
+            encoding: 7'b0011000 :: imm5_2[4:0] :: imm5[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovne.ii", "{name(rd)}, {imm5}, {imm5_2}"};
+            behavior: X[rd] = (X[rd] != (unsigned)(imm5)) ? (unsigned)((unsigned)(imm5_2)) : X[rd];
+        }
+        CMOVLT_II {
+            encoding: 7'b0011001 :: simm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovlt.ii", "{name(rd)}, {imm5_2}, {simm5}"};
+            behavior: X[rd] = ((signed)((X[rd])) < (signed)(simm5)) ? (unsigned)(imm5_2) : X[rd];
+        }
+        CMOVLTU_II {
+            encoding: 7'b0011010 :: uimm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovltu.ii", "{name(rd)}, {imm5_2}, {uimm5}"};
+            behavior: X[rd] = (X[rd] < (unsigned)(uimm5)) ? (unsigned)(imm5_2) : X[rd];
+        }
+        CMOVGE_II {
+            encoding: 7'b0011011 :: simm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovge.ii", "{name(rd)}, {imm5_2}, {simm5}"};
+            behavior: X[rd] = ((signed)((X[rd])) >= (signed)(simm5)) ? (unsigned)(imm5_2) : X[rd];
+        }
+        CMOVGEU_II {
+            encoding: 7'b0011100 :: uimm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cmovgeu.ii", "{name(rd)}, {imm5_2}, {uimm5}"};
+            behavior: X[rd] = (X[rd] >= (unsigned)(uimm5)) ? (unsigned)(imm5_2) : X[rd];
+        }
+        MPYADDI {
+            encoding: 7'b0011101 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"mpyaddi", "{name(rd)}, {name(rs1)}, {imm5}"};
+            behavior: X[rd] = X[rd] + X[rs1] * (unsigned)(imm5);
+        }
+        MVP0 {
+            encoding: 7'b0011110 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: 5'b00000 :: 7'b1011011;
+            assembly: {"mvp0", "{name(rs1)}, {name(rs2)}"};
+            behavior: {
+                X[10] = X[rs1];
+                X[11] = X[rs2];
+            }
+        }
+        MVP2 {
+            encoding: 7'b0011111 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: 5'b00000 :: 7'b1011011;
+            assembly: {"mvp2", "{name(rs1)}, {name(rs2)}"};
+            behavior: {
+                X[12] = X[rs1];
+                X[13] = X[rs2];
+            }
+        }
+        CLO {
+            encoding: 7'b0100000 :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"clo", "{name(rd)}, {name(rs1)}"};
+            behavior: X[rd] = clo_xlen(X[rs1]);
+        }
+        CTO {
+            encoding: 7'b0100001 :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"cto", "{name(rd)}, {name(rs1)}"};
+            behavior: X[rd] = cto_xlen(X[rs1]);
+        }
+        BREV32 {
+            encoding: 7'b0100010 :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+            assembly: {"brev32", "{name(rd)}, {name(rs1)}"};
+            behavior: X[rd] = brev_xlen(X[rs1]);
+        }
+        LI16 {
+            encoding: n[0:0] :: imm16[15:0] :: 3'b011 :: rd[4:0] :: 7'b1011011;
+            assembly: {"li16", "{name(rd)}, {imm16}, {n}"};
+            behavior: X[rd] = ((n == 0) ? X[0] : X[rd]) | (imm16 << (n * 16));
+        }
+        EXTS {
+            encoding: 2'b00 :: shamt5[4:0] :: width5[4:0] :: rs1[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+            assembly: {"exts", "{name(rd)}, {name(rs1)}, {width5}, {shamt5}"};
+            behavior: X[rd] = (signed)(((signed)((X[rs1][width5 + shamt5:shamt5]))));
+        }
+        EXTU {
+            encoding: 2'b01 :: shamt5[4:0] :: width5[4:0] :: rs1[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+            assembly: {"extu", "{name(rd)}, {name(rs1)}, {width5}, {shamt5}"};
+            behavior: X[rd] = (unsigned)(((unsigned)((X[rs1][width5 + shamt5:shamt5]))));
+        }
+        INSB {
+            encoding: 2'b10 :: shamt5[4:0] :: width5[4:0] :: rs1[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+            assembly: {"exts", "{name(rd)}, {name(rs1)}, {width5}, {shamt5}"};
+            behavior: X[rd][width5 + shamt5:shamt5] = X[rs1][width5 - 1:0];
+        }
+        INSBI {
+            encoding: 2'b11 :: shamt5[4:0] :: width5[4:0] :: imm5[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+            assembly: {"extu", "{name(rd)}, {imm5}, {width5}, {shamt5}"};
+            behavior: X[rd][width5 + shamt5:shamt5] = imm5[width5 - 1:0];
+        }
+    }
+}
+
+// InstructionSet ScalarEfficiencyRV64 extends RV64I {
+//     functions {
+//         extern unsigned<XLEN> brev_xlen(unsigned<XLEN>);
+//         extern unsigned<XLEN> clo_xlen(unsigned<XLEN>);
+//         extern unsigned<XLEN> cto_xlen(unsigned<XLEN>);
+//     }
+//     instructions {
+//         BEQI {
+//             encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b000 :: simm12[4:0] :: 7'b1111011;
+//             assembly: {"beqi", "{name(rs1)}, {simm12}, {simm5}"};
+//             behavior: if (X[rs1] == (signed)(simm5)) {
+//                 PC = PC + ((signed)(simm12) << 1);
+//             }
+//         }
+//         BNEI {
+//             encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b001 :: simm12[4:0] :: 7'b1111011;
+//             assembly: {"bnei", "{name(rs1)}, {simm12}, {simm5}"};
+//             behavior: if (X[rs1] != (signed)(simm5)) {
+//                 PC = PC + ((signed)(simm12) << 1);
+//             }
+//         }
+//         BLTI {
+//             encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b010 :: simm12[4:0] :: 7'b1111011;
+//             assembly: {"blti", "{name(rs1)}, {simm12}, {simm5}"};
+//             behavior: if ((signed)((X[rs1])) < (signed)(simm5)) {
+//                 PC = PC + ((signed)(simm12) << 1);
+//             }
+//         }
+//         BLTUI {
+//             encoding: simm12[11:5] :: uimm5[4:0] :: rs1[4:0] :: 3'b011 :: simm12[4:0] :: 7'b1111011;
+//             assembly: {"bltui", "{name(rs1)}, {simm12}, {uimm5}"};
+//             behavior: if (X[rs1] < (unsigned)(uimm5)) {
+//                 PC = PC + ((signed)(simm12) << 1);
+//             }
+//         }
+//         BGEI {
+//             encoding: simm12[11:5] :: simm5[4:0] :: rs1[4:0] :: 3'b100 :: simm12[4:0] :: 7'b1111011;
+//             assembly: {"bgei", "{name(rs1)}, {simm12}, {simm5}"};
+//             behavior: if ((signed)((X[rs1])) >= (signed)(simm5)) {
+//                 PC = PC + ((signed)(simm12) << 1);
+//             }
+//         }
+//         BGEUI {
+//             encoding: simm12[11:5] :: uimm5[4:0] :: rs1[4:0] :: 3'b101 :: simm12[4:0] :: 7'b1111011;
+//             assembly: {"bgeui", "{name(rs1)}, {simm12}, {uimm5}"};
+//             behavior: if (X[rs1] >= (unsigned)(uimm5)) {
+//                 PC = PC + ((signed)(simm12) << 1);
+//             }
+//         }
+//         BEQZ_FAR {
+//             encoding: simm17[16:5] :: rs1[4:0] :: 3'b110 :: simm17[4:0] :: 7'b1111011;
+//             assembly: {"beqz.far", "{name(rs1)}, {simm17}"};
+//             behavior: if (X[rs1] == 0) {
+//                 PC = PC + ((signed)(simm17) << 1);
+//             }
+//         }
+//         BNEZ_FAR {
+//             encoding: simm17[16:5] :: rs1[4:0] :: 3'b111 :: simm17[4:0] :: 7'b1111011;
+//             assembly: {"bnez.far", "{name(rs1)}, {simm17}"};
+//             behavior: if (X[rs1] != 0) {
+//                 PC = PC + ((signed)(simm17) << 1);
+//             }
+//         }
+//         BLTZ_FAR {
+//             encoding: simm17[16:5] :: rs1[4:0] :: 3'b000 :: simm17[4:0] :: 7'b1011011;
+//             assembly: {"bltz.far", "{name(rs1)}, {simm17}"};
+//             behavior: if ((signed)((X[rs1])) < 0) {
+//                 PC = PC + ((signed)(simm17) << 1);
+//             }
+//         }
+//         BGEZ_FAR {
+//             encoding: simm17[16:5] :: rs1[4:0] :: 3'b001 :: simm17[4:0] :: 7'b1011011;
+//             assembly: {"bgez.far", "{name(rs1)}, {simm17}"};
+//             behavior: if ((signed)((X[rs1])) >= 0) {
+//                 PC = PC + ((signed)(simm17) << 1);
+//             }
+//         }
+//         CSELEQZ {
+//             encoding: 7'b0000000 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cseleqz", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = (X[rd] == 0) ? X[rs1] : X[rs2];
+//         }
+//         CSELNEZ {
+//             encoding: 7'b0000001 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cselnez", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = (X[rd] != 0) ? X[rs1] : X[rs2];
+//         }
+//         CSELLTZ {
+//             encoding: 7'b0000010 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cselltz", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = ((signed)((X[rd])) < 0) ? X[rs1] : X[rs2];
+//         }
+//         CSELGEZ {
+//             encoding: 7'b0000011 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cselgez", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = ((signed)((X[rd])) >= 0) ? X[rs1] : X[rs2];
+//         }
+//         CSELEQZI {
+//             encoding: 7'b0000100 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cseleqzi", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = (X[rd] == 0) ? X[rs1] : (unsigned)(imm5);
+//         }
+//         CMOVEQ {
+//             encoding: 7'b0000101 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmoveq", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = (X[rd] == X[rs1]) ? X[rs2] : X[rd];
+//         }
+//         CMOVNE {
+//             encoding: 7'b0000110 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovne", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = (X[rd] != X[rs1]) ? X[rs2] : X[rd];
+//         }
+//         CMOVLT {
+//             encoding: 7'b0000111 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovlt", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = ((signed)((X[rd])) < (signed)((X[rs1]))) ? X[rs2] : X[rd];
+//         }
+//         CMOVLTU {
+//             encoding: 7'b0001000 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovltu", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = (X[rd] < X[rs1]) ? X[rs2] : X[rd];
+//         }
+//         CMOVGE {
+//             encoding: 7'b0001001 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovge", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = ((signed)((X[rd])) >= (signed)((X[rs1]))) ? X[rs2] : X[rd];
+//         }
+//         CMOVGEU {
+//             encoding: 7'b0001010 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovgeu", "{name(rd)}, {name(rs1)}, {name(rs2)}"};
+//             behavior: X[rd] = (X[rd] >= X[rs1]) ? X[rs2] : X[rd];
+//         }
+//         CMOVEQ_RI {
+//             encoding: 7'b0001011 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmoveq.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = (X[rd] == X[rs1]) ? (unsigned)(imm5) : X[rd];
+//         }
+//         CMOVNE_RI {
+//             encoding: 7'b0001100 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovne.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = (X[rd] != X[rs1]) ? (unsigned)(imm5) : X[rd];
+//         }
+//         CMOVLT_RI {
+//             encoding: 7'b0001101 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovlt.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = ((signed)((X[rd])) < (signed)((X[rs1]))) ? (unsigned)(imm5) : X[rd];
+//         }
+//         CMOVLTU_RI {
+//             encoding: 7'b0001110 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovltu.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = (X[rd] < X[rs1]) ? (unsigned)(imm5) : X[rd];
+//         }
+//         CMOVGE_RI {
+//             encoding: 7'b0001111 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovge.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = ((signed)((X[rd])) >= (signed)((X[rs1]))) ? (unsigned)(imm5) : X[rd];
+//         }
+//         CMOVGEU_RI {
+//             encoding: 7'b0010000 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovgeu.ri", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = (X[rd] >= X[rs1]) ? (unsigned)(imm5) : X[rd];
+//         }
+//         CMOVEQ_IR {
+//             encoding: 7'b0010001 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmoveq.ir", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = (X[rd] == (unsigned)(imm5)) ? X[rs1] : X[rd];
+//         }
+//         CMOVNE_IR {
+//             encoding: 7'b0010010 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovne.ir", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = (X[rd] != (unsigned)(imm5)) ? X[rs1] : X[rd];
+//         }
+//         CMOVLT_IR {
+//             encoding: 7'b0010011 :: simm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovlt.ir", "{name(rd)}, {name(rs1)}, {simm5}"};
+//             behavior: X[rd] = ((signed)((X[rd])) < (signed)(simm5)) ? X[rs1] : X[rd];
+//         }
+//         CMOVLTU_IR {
+//             encoding: 7'b0010100 :: uimm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovltu.ir", "{name(rd)}, {name(rs1)}, {uimm5}"};
+//             behavior: X[rd] = (X[rd] < (unsigned)(uimm5)) ? X[rs1] : X[rd];
+//         }
+//         CMOVGE_IR {
+//             encoding: 7'b0010101 :: simm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovge.ir", "{name(rd)}, {name(rs1)}, {simm5}"};
+//             behavior: X[rd] = ((signed)((X[rd])) >= (signed)(simm5)) ? X[rs1] : X[rd];
+//         }
+//         CMOVGEU_IR {
+//             encoding: 7'b0010110 :: uimm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovgeu.ir", "{name(rd)}, {name(rs1)}, {uimm5}"};
+//             behavior: X[rd] = (X[rd] >= (unsigned)(uimm5)) ? X[rs1] : X[rd];
+//         }
+//         CMOVEQ_II {
+//             encoding: 7'b0010111 :: imm5_2[4:0] :: imm5[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmoveq.ii", "{name(rd)}, {imm5}, {imm5_2}"};
+//             behavior: X[rd] = (X[rd] == (unsigned)(imm5)) ? (unsigned)((unsigned)(imm5_2)) : X[rd];
+//         }
+//         CMOVNE_II {
+//             encoding: 7'b0011000 :: imm5_2[4:0] :: imm5[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovne.ii", "{name(rd)}, {imm5}, {imm5_2}"};
+//             behavior: X[rd] = (X[rd] != (unsigned)(imm5)) ? (unsigned)((unsigned)(imm5_2)) : X[rd];
+//         }
+//         CMOVLT_II {
+//             encoding: 7'b0011001 :: simm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovlt.ii", "{name(rd)}, {imm5_2}, {simm5}"};
+//             behavior: X[rd] = ((signed)((X[rd])) < (signed)(simm5)) ? (unsigned)(imm5_2) : X[rd];
+//         }
+//         CMOVLTU_II {
+//             encoding: 7'b0011010 :: uimm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovltu.ii", "{name(rd)}, {imm5_2}, {uimm5}"};
+//             behavior: X[rd] = (X[rd] < (unsigned)(uimm5)) ? (unsigned)(imm5_2) : X[rd];
+//         }
+//         CMOVGE_II {
+//             encoding: 7'b0011011 :: simm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovge.ii", "{name(rd)}, {imm5_2}, {simm5}"};
+//             behavior: X[rd] = ((signed)((X[rd])) >= (signed)(simm5)) ? (unsigned)(imm5_2) : X[rd];
+//         }
+//         CMOVGEU_II {
+//             encoding: 7'b0011100 :: uimm5[4:0] :: imm5_2[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cmovgeu.ii", "{name(rd)}, {imm5_2}, {uimm5}"};
+//             behavior: X[rd] = (X[rd] >= (unsigned)(uimm5)) ? (unsigned)(imm5_2) : X[rd];
+//         }
+//         MPYADDI {
+//             encoding: 7'b0011101 :: imm5[4:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"mpyaddi", "{name(rd)}, {name(rs1)}, {imm5}"};
+//             behavior: X[rd] = X[rd] + X[rs1] * (unsigned)(imm5);
+//         }
+//         MVP0 {
+//             encoding: 7'b0011110 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: 5'b00000 :: 7'b1011011;
+//             assembly: {"mvp0", "{name(rs1)}, {name(rs2)}"};
+//             behavior: {
+//                 X[10] = X[rs1];
+//                 X[11] = X[rs2];
+//             }
+//         }
+//         MVP2 {
+//             encoding: 7'b0011111 :: rs2[4:0] :: rs1[4:0] :: 3'b010 :: 5'b00000 :: 7'b1011011;
+//             assembly: {"mvp2", "{name(rs1)}, {name(rs2)}"};
+//             behavior: {
+//                 X[12] = X[rs1];
+//                 X[13] = X[rs2];
+//             }
+//         }
+//         CLO {
+//             encoding: 7'b0100000 :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"clo", "{name(rd)}, {name(rs1)}"};
+//             behavior: X[rd] = clo_xlen(X[rs1]);
+//         }
+//         CTO {
+//             encoding: 7'b0100001 :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"cto", "{name(rd)}, {name(rs1)}"};
+//             behavior: X[rd] = cto_xlen(X[rs1]);
+//         }
+//         BREV32 {
+//             encoding: 7'b0100010 :: 5'b00000 :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"brev32", "{name(rd)}, {name(rs1)}"};
+//             behavior: X[rd] = brev_xlen(X[rs1]);
+//         }
+//         LI16 {
+//             encoding: n[0:0] :: imm16[15:0] :: 3'b011 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"li16", "{name(rd)}, {imm16}, {n}"};
+//             behavior: X[rd] = ((n == 0) ? X[0] : X[rd]) | (imm16 << (n * 16));
+//         }
+//         EXTS {
+//             encoding: 2'b00 :: shamt5[4:0] :: width5[4:0] :: rs1[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"exts", "{name(rd)}, {name(rs1)}, {width5}, {shamt5}"};
+//             behavior: X[rd] = (signed)(((signed)((X[rs1][width5 + shamt5:shamt5]))));
+//         }
+//         EXTU {
+//             encoding: 2'b01 :: shamt5[4:0] :: width5[4:0] :: rs1[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"extu", "{name(rd)}, {name(rs1)}, {width5}, {shamt5}"};
+//             behavior: X[rd] = (unsigned)(((unsigned)((X[rs1][width5 + shamt5:shamt5]))));
+//         }
+//         INSB {
+//             encoding: 2'b10 :: shamt5[4:0] :: width5[4:0] :: rs1[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"exts", "{name(rd)}, {name(rs1)}, {width5}, {shamt5}"};
+//             behavior: X[rd][width5 + shamt5:shamt5] = X[rs1][width5 - 1:0];
+//         }
+//         INSBI {
+//             encoding: 2'b11 :: shamt5[4:0] :: width5[4:0] :: imm5[4:0] :: 3'b100 :: rd[4:0] :: 7'b1011011;
+//             assembly: {"extu", "{name(rd)}, {imm5}, {width5}, {shamt5}"};
+//             behavior: X[rd][width5 + shamt5:shamt5] = imm5[width5 - 1:0];
+//         }
+//     }
+// }
