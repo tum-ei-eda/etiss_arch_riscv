@@ -1,7 +1,7 @@
 import "rv_base/RISCVBase.core_desc"
 import "rv_base/RVI.core_desc"
 
-InstructionSet tum_ret extends RISCVBase {
+InstructionSet tum_ret extends tum_csr {
     architectural_state {
         signed<32> ETISS_RETURNCODE_NOERROR = 0;
         signed<32> ETISS_RETURNCODE_GENERALERROR = -1;
@@ -40,15 +40,6 @@ InstructionSet tum_ret extends RISCVBase {
     }
 
     functions {
-        unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
-            if (!mask) return 0;
-            return (reg & mask) / (mask & ~(mask << 1));
-        }
-
-        unsigned<64> set_field(unsigned<64> reg, unsigned<64> mask, unsigned<64> val) {
-            return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
-        }
-
         unsigned<8> ctz(unsigned<64> val) {
             if (!val)
                 return 0;
@@ -104,7 +95,7 @@ InstructionSet tum_ret extends RISCVBase {
 
             if (PRIV <= RV_PRV_S && (deleg >> bit) & 1) { // handle in S-MODE
                 vector = (CSR[RV_CSR_STVEC] & 1) && irq2 ? bit * 4 : 0;
-                PC = (CSR[RV_CSR_STVEC] & ~(unsigned<XLEN>)1) + vector;
+                PC = (CSR[RV_CSR_STVEC] & ~((unsigned<XLEN>)1)) + vector;
                 CSR[RV_CSR_SEPC] = epc;
                 CSR[RV_CSR_SCAUSE] = mcause;
 
@@ -117,7 +108,7 @@ InstructionSet tum_ret extends RISCVBase {
 
             } else {    // handle in M-MODE
                 vector = (CSR[RV_CSR_MTVEC] & 1) && irq2 ? bit * 4 : 0;
-                PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1) + vector;
+                PC = (CSR[RV_CSR_MTVEC] & ~((unsigned<XLEN>)1)) + vector;
                 CSR[RV_CSR_MEPC] = epc;
                 CSR[RV_CSR_MCAUSE] = mcause;
 
@@ -293,6 +284,15 @@ InstructionSet tum_csr extends Zicsr {
         extern unsigned<64> etiss_get_cycles() [[ etiss_needs_arch ]];
         extern unsigned<64> etiss_get_time();
         extern unsigned<64> etiss_get_instret() [[ etiss_needs_arch ]];
+
+        unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
+            if (!mask) return 0;
+            return (reg & mask) / (mask & ~(mask << 1));
+        }
+
+        unsigned<64> set_field(unsigned<64> reg, unsigned<64> mask, unsigned<64> val) {
+            return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
+        }
 
         unsigned<XLEN> sstatus_mask() {
             unsigned<XLEN> mask = 0;
