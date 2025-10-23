@@ -1,0 +1,19 @@
+import "rv_base/RISCVBase.core_desc"
+
+InstructionSet dotprod extends RISCVBase {
+  instructions {
+    DOTP {
+      encoding: 7'b0001001 :: rs2[4:0] :: rs1[4:0] ::
+                3'd0 ::  rd[4:0] :: 7'b0001011;
+      behavior: {
+        signed<32> res = 0;
+        for (int i = 0; i < 32; i += 8) {
+          signed<16> prod = (signed) X[rs1][i+7:i] *
+                            (signed) X[rs2][i+7:i];
+          res += prod;
+        }
+        X[rd] = (unsigned) res;
+      }
+    }
+  }
+}
