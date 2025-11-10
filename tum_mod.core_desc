@@ -82,7 +82,6 @@ InstructionSet tum_ret extends RISCVBase {
 
             if ((val << 63) == 0) {
                 res += 1;
-                val >>= 1;
             }
 
             return res;
