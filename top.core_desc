@@ -8,8 +8,8 @@ import "tum_mod.core_desc"
 import "tum_rva.core_desc"
 import "tum_rvm.core_desc"
 
-
-Core RV32IMACFDV provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32D, RV32DC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
+// Core RV32IMACFDV provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32D, RV32DC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
+Core RV32IMACFDV provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
     architectural_state {
         CSR[0x000] = 0x0000000B; // ustatus
         CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
@@ -26,6 +26,121 @@ Core RV32IMACFDV provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32D, RV3
 
         VLEN = 1024;
         // VLEN = 128;
+        CSR[VTYPE_ADDR] = 0x1 << (XLEN-1); // vtype.vill=1, otherwise zero
+        CSR[VL_ADDR] = 0x0; // vl
+        CSR[VLENB_ADDR] = VLEN / 8; // vlenb
+        // vstart, vxrm, vxsat undefined at reset
+    }
+}
+
+Core RV32IMACFDV_zvl64b provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
+    architectural_state {
+        CSR[0x000] = 0x0000000B; // ustatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
+        CSR[0x300] |= RV_MSTATUS_FS; // enable fpu
+        CSR[0x300] |= RV_MSTATUS_VS; // enable vpu
+
+        CSR[RV_CSR_MISA] = 0x4014112D; // misa
+        CSR[0xC10] = 0x00000003; // ?
+
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
+        CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
+
+        VLEN = 64;
+        CSR[VTYPE_ADDR] = 0x1 << (XLEN-1); // vtype.vill=1, otherwise zero
+        CSR[VL_ADDR] = 0x0; // vl
+        CSR[VLENB_ADDR] = VLEN / 8; // vlenb
+        // vstart, vxrm, vxsat undefined at reset
+    }
+}
+
+Core RV32IMACFDV_zvl128b provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
+    architectural_state {
+        CSR[0x000] = 0x0000000B; // ustatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
+        CSR[0x300] |= RV_MSTATUS_FS; // enable fpu
+        CSR[0x300] |= RV_MSTATUS_VS; // enable vpu
+
+        CSR[RV_CSR_MISA] = 0x4014112D; // misa
+        CSR[0xC10] = 0x00000003; // ?
+
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
+        CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
+
+        VLEN = 128;
+        CSR[VTYPE_ADDR] = 0x1 << (XLEN-1); // vtype.vill=1, otherwise zero
+        CSR[VL_ADDR] = 0x0; // vl
+        CSR[VLENB_ADDR] = VLEN / 8; // vlenb
+        // vstart, vxrm, vxsat undefined at reset
+    }
+}
+
+Core RV32IMACFDV_zvl256b provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
+    architectural_state {
+        CSR[0x000] = 0x0000000B; // ustatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
+        CSR[0x300] |= RV_MSTATUS_FS; // enable fpu
+        CSR[0x300] |= RV_MSTATUS_VS; // enable vpu
+
+        CSR[RV_CSR_MISA] = 0x4014112D; // misa
+        CSR[0xC10] = 0x00000003; // ?
+
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
+        CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
+
+        VLEN = 256;
+        CSR[VTYPE_ADDR] = 0x1 << (XLEN-1); // vtype.vill=1, otherwise zero
+        CSR[VL_ADDR] = 0x0; // vl
+        CSR[VLENB_ADDR] = VLEN / 8; // vlenb
+        // vstart, vxrm, vxsat undefined at reset
+    }
+}
+
+Core RV32IMACFDV_zvl512b provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
+    architectural_state {
+        CSR[0x000] = 0x0000000B; // ustatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
+        CSR[0x300] |= RV_MSTATUS_FS; // enable fpu
+        CSR[0x300] |= RV_MSTATUS_VS; // enable vpu
+
+        CSR[RV_CSR_MISA] = 0x4014112D; // misa
+        CSR[0xC10] = 0x00000003; // ?
+
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
+        CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
+
+        VLEN = 512;
+        CSR[VTYPE_ADDR] = 0x1 << (XLEN-1); // vtype.vill=1, otherwise zero
+        CSR[VL_ADDR] = 0x0; // vl
+        CSR[VLENB_ADDR] = VLEN / 8; // vlenb
+        // vstart, vxrm, vxsat undefined at reset
+    }
+}
+
+Core RV32IMACFDV_zvl1024b provides RV32I, RV32IC, RV32M, RV32V, RV32F, RV32FC, RV32V, Zifencei, tum_csr, tum_ret, tum_rva, tum_semihosting {
+    architectural_state {
+        CSR[0x000] = 0x0000000B; // ustatus
+        CSR[RV_CSR_SSTATUS] = 0x0000000B; // sstatus
+        CSR[RV_CSR_MSTATUS] = 0x0000000B; // mstatus
+        CSR[0x300] |= RV_MSTATUS_FS; // enable fpu
+        CSR[0x300] |= RV_MSTATUS_VS; // enable vpu
+
+        CSR[RV_CSR_MISA] = 0x4014112D; // misa
+        CSR[0xC10] = 0x00000003; // ?
+
+        CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
+        CSR[RV_CSR_SIE] = CSR[0x304] & (~(0x888)); // sie
+        CSR[0x004] = CSR[0x304] & (~(0xAAA)); // uie
+
+        VLEN = 1024;
         CSR[VTYPE_ADDR] = 0x1 << (XLEN-1); // vtype.vill=1, otherwise zero
         CSR[VL_ADDR] = 0x0; // vl
         CSR[VLENB_ADDR] = VLEN / 8; // vlenb
