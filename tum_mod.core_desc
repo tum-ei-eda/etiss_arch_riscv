@@ -285,7 +285,27 @@ InstructionSet tum_csr extends Zicsr {
     architectural_state {
         unsigned<XLEN>& MSTATUS [[ etiss_is_global_irq_en=0xf ]] = CSR[RV_CSR_MSTATUS];
         unsigned<XLEN>& MIE [[ etiss_is_irq_en ]] = CSR[RV_CSR_MIE];
-        unsigned<XLEN>& MIP [[ etiss_is_irq_pending ]] = CSR[RV_CSR_MIP];
+        // Aliases are available for ETISS GDBServer
+        unsigned<XLEN>& MIP = CSR[RV_CSR_MIP];
+        unsigned<XLEN>& CYCLE = CSR[RV_CSR_CYCLE];
+        unsigned<XLEN>& CYCLEH = CSR[RV_CSR_CYCLEH];
+        unsigned<XLEN>& TIME = CSR[RV_CSR_TIME];
+        unsigned<XLEN>& TIMEH = CSR[RV_CSR_TIMEH];
+        unsigned<XLEN>& INSTRET = CSR[RV_CSR_INSTRET];
+        unsigned<XLEN>& INSTRETH = CSR[RV_CSR_INSTRETH];
+        unsigned<XLEN>& MVENDIRID = CSR[RV_CSR_MVENDORID];
+        unsigned<XLEN>& MARCHID = CSR[RV_CSR_MARCHID];
+        unsigned<XLEN>& MIMPID = CSR[RV_CSR_MIMPID];
+        unsigned<XLEN>& MHARTID = CSR[RV_CSR_MHARTID];
+        unsigned<XLEN>& MISA = CSR[RV_CSR_MISA];
+        unsigned<XLEN>& MEDELEG = CSR[RV_CSR_MEDELEG];
+        unsigned<XLEN>& MIDELEG = CSR[RV_CSR_MIDELEG];
+        unsigned<XLEN>& MTVEC = CSR[RV_CSR_MTVEC];
+        unsigned<XLEN>& MCOUNTEREN = CSR[RV_CSR_MCOUNTEREN];
+        unsigned<XLEN>& MSCRATCH = CSR[RV_CSR_MSCRATCH];
+        unsigned<XLEN>& MEPC = CSR[RV_CSR_MEPC];
+        unsigned<XLEN>& MCAUSE = CSR[RV_CSR_MCAUSE];
+        unsigned<XLEN>& MTVAL = CSR[RV_CSR_MTVAL];
     }
 
     functions {
