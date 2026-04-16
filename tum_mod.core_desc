@@ -108,11 +108,11 @@ InstructionSet tum_ret extends RISCVBase {
                 CSR[RV_CSR_SCAUSE] = mcause;
 
                 unsigned<XLEN> s = csr_read(RV_CSR_SSTATUS);
-                s = set_field(s, RV_MSTATUS_SPIE, get_field(s, RV_MSTATUS_SIE));
-                s = set_field(s, RV_MSTATUS_SPP, PRIV);
-                s = set_field(s, RV_MSTATUS_SIE, 0);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_SPIE, get_field(s, RV_MSTATUS_SIE));
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_SPP, PRIV);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_SIE, 0);
                 csr_write(RV_CSR_SSTATUS, s);
-                PRIV = RV_PRV_S;
+                PRIV = (unsigned<3>)RV_PRV_S;
 
             } else {    // handle in M-MODE
                 vector = (CSR[RV_CSR_MTVEC] & 1) && irq2 ? bit * 4 : 0;
@@ -121,11 +121,11 @@ InstructionSet tum_ret extends RISCVBase {
                 CSR[RV_CSR_MCAUSE] = mcause;
 
                 unsigned<XLEN> s = csr_read(RV_CSR_MSTATUS);
-                s = set_field(s, RV_MSTATUS_MPIE, get_field(s, RV_MSTATUS_MIE));
-                s = set_field(s, RV_MSTATUS_MPP, PRIV);
-                s = set_field(s, RV_MSTATUS_MIE, 0);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPIE, get_field(s, RV_MSTATUS_MIE));
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPP, PRIV);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MIE, 0);
                 csr_write(RV_CSR_MSTATUS, s);
-                PRIV = RV_PRV_M;
+                PRIV = (unsigned<3>)RV_PRV_M;
             }
         }
 
@@ -152,13 +152,13 @@ InstructionSet tum_ret extends RISCVBase {
 
             if (!pending_interrupts) return 0;
 
-            unsigned<XLEN> mie = get_field(CSR[RV_CSR_MSTATUS], RV_MSTATUS_MIE);
+            unsigned<XLEN> mie = (unsigned<XLEN>)get_field(CSR[RV_CSR_MSTATUS], RV_MSTATUS_MIE);
             unsigned<XLEN> m_enabled = PRIV < RV_PRV_M || (PRIV == RV_PRV_M && mie);
             unsigned<XLEN> enabled_interrupts = pending_interrupts & ~CSR[RV_CSR_MIDELEG] & -m_enabled;
 
             if (enabled_interrupts == 0) {
                 unsigned<XLEN> deleg = CSR[RV_CSR_MIDELEG];
-                unsigned<XLEN> sie = get_field(csr_read(RV_CSR_SSTATUS), RV_MSTATUS_SIE);
+                unsigned<XLEN> sie = (unsigned<XLEN>)get_field(csr_read(RV_CSR_SSTATUS), RV_MSTATUS_SIE);
                 unsigned<XLEN> s_enabled = PRIV < RV_PRV_S || (PRIV == RV_PRV_S && sie);
                 enabled_interrupts = pending_interrupts & deleg & -s_enabled;
             }
@@ -216,17 +216,17 @@ InstructionSet tum_ret extends RISCVBase {
 
                 unsigned<XLEN> s = csr_read(RV_CSR_MSTATUS);
 
-                unsigned<XLEN> prev_prv = get_field(s, RV_MSTATUS_MPP);
+                unsigned<XLEN> prev_prv = (unsigned<XLEN>)get_field(s, RV_MSTATUS_MPP);
 
                 if (prev_prv != RV_PRV_M)
-                    s = set_field(s, RV_MSTATUS_MPRV, 0);
+                    s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPRV, 0);
 
-                s = set_field(s, RV_MSTATUS_MIE, get_field(s, RV_MSTATUS_MPIE));
-                s = set_field(s, RV_MSTATUS_MPIE, 1);
-                s = set_field(s, RV_MSTATUS_MPP, extension_enabled('U') ? RV_PRV_U : RV_PRV_M);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MIE, get_field(s, RV_MSTATUS_MPIE));
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPIE, 1);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPP, extension_enabled('U') ? RV_PRV_U : RV_PRV_M);
 
                 csr_write(RV_CSR_MSTATUS, s);
-                PRIV = prev_prv;
+                PRIV = (unsigned<3>)prev_prv;
             }
         }
 
@@ -240,14 +240,14 @@ InstructionSet tum_ret extends RISCVBase {
 
                 unsigned<XLEN> s = csr_read(RV_CSR_SSTATUS);
 
-                unsigned<XLEN> prev_prv = get_field(s, RV_MSTATUS_SPP);
+                unsigned<XLEN> prev_prv = (unsigned<XLEN>)get_field(s, RV_MSTATUS_SPP);
 
-                s = set_field(s, RV_MSTATUS_SIE, get_field(s, RV_MSTATUS_SPIE));
-                s = set_field(s, RV_MSTATUS_SPIE, 1);
-                s = set_field(s, RV_MSTATUS_SPP, RV_PRV_U);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_SIE, get_field(s, RV_MSTATUS_SPIE));
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_SPIE, 1);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_SPP, RV_PRV_U);
 
                 csr_write(RV_CSR_MSTATUS, s);
-                PRIV = prev_prv;
+                PRIV = (unsigned<3>)prev_prv;
             }
         }
 
@@ -268,7 +268,7 @@ InstructionSet tum_ret extends RISCVBase {
 
     always {
         pc_inc {
-            PC = PC + __encoding_size;
+            PC = (unsigned<XLEN>)(PC + __encoding_size);
         }
 
         /*

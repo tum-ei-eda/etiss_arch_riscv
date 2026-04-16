@@ -23,8 +23,8 @@ InstructionSet tum_rva extends RV32A {
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
                 if (RES_ADDR == offs) MEM[offs] = (signed<32>)X[rs2 % RFS];
-                if (rd) X[rd % RFS] = RES_ADDR != offs;
-                RES_ADDR = -1;
+                if (rd) X[rd % RFS] = (unsigned<XLEN>)(unsigned<1>)(RES_ADDR != offs);
+                RES_ADDR = (unsigned)(signed<XLEN>)(-1);
             }
         }
     }
@@ -49,8 +49,8 @@ InstructionSet tum_rva64 extends tum_rva {
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
                 if (RES_ADDR == offs) MEM[offs] = (signed<64>)X[rs2 % RFS];
-                if (rd) X[rd % RFS] = RES_ADDR != offs;
-                RES_ADDR = -1;
+                if (rd) X[rd % RFS] = (unsigned<XLEN>)(unsigned<1>)(RES_ADDR != offs);
+                RES_ADDR = (unsigned)(signed<XLEN>)(-1);
             }
         }
     }
