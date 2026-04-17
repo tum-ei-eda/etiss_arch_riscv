@@ -424,9 +424,11 @@ InstructionSet tum_semihosting extends RV32I {
             encoding: 0b000000000001 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
                 if (etiss_semihost_enabled()) {
-                    unsigned<32> pre    = (unsigned<32>)MEM[PC - 4];
-                    unsigned<32> ebreak = (unsigned<32>)MEM[PC + 0];
-                    unsigned<32> post   = (unsigned<32>)MEM[PC + 4];
+                    unsigned<XLEN> pc_m4 = (unsigned<XLEN>)(PC - 4);
+                    unsigned<XLEN> pc_p4 = (unsigned<XLEN>)(PC + 4);
+                    unsigned<32> pre    = (unsigned<32>)MEM[pc_m4+3:pc_m4];
+                    unsigned<32> ebreak = (unsigned<32>)MEM[PC];
+                    unsigned<32> post   = (unsigned<32>)MEM[pc_p4+3:pc_p4];
                     if ( pre    == 0x01f01013 // slli x0, x0, 0x1f   Entry NOP
                       && ebreak == 0x00100073 // ebreak              Break to debugger
                       && post   == 0x40705013 // srai x0, x0, 7      NOP encoding the semihosting call number 7

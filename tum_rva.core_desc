@@ -11,7 +11,7 @@ InstructionSet tum_rva extends RV32A {
             assembly: "{name(rd)}, {name(rs1)}, {name(aq)}, {name(rl)}";
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
-                signed<32> res = (signed<32>)MEM[offs];
+                signed<32> res = (signed<32>)MEM[offs+3:offs];
                 RES_ADDR = offs;
                 if (rd) X[rd % RFS] = (signed<XLEN>)res;
             }
@@ -22,7 +22,7 @@ InstructionSet tum_rva extends RV32A {
             assembly: "{name(rd)}, {name(rs1)}, {name(rs2)}, {name(aq)}, {name(rl)}";
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
-                if (RES_ADDR == offs) MEM[offs] = (signed<32>)X[rs2 % RFS];
+                if (RES_ADDR == offs) MEM[offs+3:offs] = (signed<32>)X[rs2 % RFS];
                 if (rd) X[rd % RFS] = (unsigned<XLEN>)(unsigned<1>)(RES_ADDR != offs);
                 RES_ADDR = (unsigned)(signed<XLEN>)(-1);
             }
@@ -37,7 +37,7 @@ InstructionSet tum_rva64 extends tum_rva {
             assembly: "{name(rd)}, {name(rs1)}, {name(aq)}, {name(rl)}";
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
-                signed<64> res = (signed<64>)MEM[offs];
+                signed<64> res = (signed<64>)MEM[offs+7:offs];
                 RES_ADDR = offs;
                 if (rd) X[rd % RFS] = (signed<XLEN>)res;
             }
@@ -48,7 +48,7 @@ InstructionSet tum_rva64 extends tum_rva {
             assembly: "{name(rd)}, {name(rs1)}, {name(rs2)}, {name(aq)}, {name(rl)}";
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
-                if (RES_ADDR == offs) MEM[offs] = (signed<64>)X[rs2 % RFS];
+                if (RES_ADDR == offs) MEM[offs+7:offs] = (signed<64>)X[rs2 % RFS];
                 if (rd) X[rd % RFS] = (unsigned<XLEN>)(unsigned<1>)(RES_ADDR != offs);
                 RES_ADDR = (unsigned)(signed<XLEN>)(-1);
             }
