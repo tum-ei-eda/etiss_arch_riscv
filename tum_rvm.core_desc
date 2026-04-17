@@ -1,6 +1,6 @@
 import "rv_base/RVM.core_desc"
 
-InstructionSet tum_rvm extends RV32M {
+InstructionSet tum_rvm extends RVM {
     functions {
         signed<XLEN> mulh(signed<XLEN> x, signed<XLEN> y) {
             signed<MUL_LEN> res = (signed<MUL_LEN>)x * (signed<MUL_LEN>)y;
