@@ -427,7 +427,7 @@ InstructionSet tum_semihosting extends RV32I {
                     unsigned<XLEN> pc_m4 = (unsigned<XLEN>)(PC - 4);
                     unsigned<XLEN> pc_p4 = (unsigned<XLEN>)(PC + 4);
                     unsigned<32> pre    = (unsigned<32>)MEM[pc_m4+3:pc_m4];
-                    unsigned<32> ebreak = (unsigned<32>)MEM[PC];
+                    unsigned<32> ebreak = (unsigned<32>)MEM[PC+3:PC];
                     unsigned<32> post   = (unsigned<32>)MEM[pc_p4+3:pc_p4];
                     if ( pre    == 0x01f01013 // slli x0, x0, 0x1f   Entry NOP
                       && ebreak == 0x00100073 // ebreak              Break to debugger
