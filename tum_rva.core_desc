@@ -1,6 +1,6 @@
 import "rv_base/RVA.core_desc"
 
-InstructionSet tum_rva extends RV32A {
+InstructionSet tum_rva extends RVA {
     architectural_state {
         register unsigned<XLEN> RES_ADDR = -1;
     }

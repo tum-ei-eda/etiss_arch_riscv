@@ -418,7 +418,7 @@ InstructionSet tum_csr extends Zicsr {
     }
 }
 
-InstructionSet tum_semihosting extends RV32I {
+InstructionSet tum_semihosting extends RVI {
     instructions {
         EBREAK [[no_cont]] [[cond]] {
             encoding: 0b000000000001 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
