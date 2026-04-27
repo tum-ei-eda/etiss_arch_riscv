@@ -289,11 +289,15 @@ InstructionSet tum_csr extends Zicsr {
         unsigned<XLEN>& MIP = CSR[RV_CSR_MIP];
         unsigned<XLEN>& CYCLE = CSR[RV_CSR_CYCLE];
         unsigned<XLEN>& CYCLEH = CSR[RV_CSR_CYCLEH];
+        unsigned<XLEN>& MCYCLE = CSR[RV_CSR_MCYCLE];
+        unsigned<XLEN>& MCYCLEH = CSR[RV_CSR_MCYCLEH];
         unsigned<XLEN>& TIME = CSR[RV_CSR_TIME];
         unsigned<XLEN>& TIMEH = CSR[RV_CSR_TIMEH];
         unsigned<XLEN>& INSTRET = CSR[RV_CSR_INSTRET];
         unsigned<XLEN>& INSTRETH = CSR[RV_CSR_INSTRETH];
-        unsigned<XLEN>& MVENDIRID = CSR[RV_CSR_MVENDORID];
+        unsigned<XLEN>& MINSTRET = CSR[RV_CSR_MINSTRET];
+        unsigned<XLEN>& MINSTRETH = CSR[RV_CSR_MINSTRETH];
+        unsigned<XLEN>& MVENDORID = CSR[RV_CSR_MVENDORID];
         unsigned<XLEN>& MARCHID = CSR[RV_CSR_MARCHID];
         unsigned<XLEN>& MIMPID = CSR[RV_CSR_MIMPID];
         unsigned<XLEN>& MHARTID = CSR[RV_CSR_MHARTID];
