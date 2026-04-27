@@ -252,7 +252,7 @@ InstructionSet tum_ret extends RISCVBase {
         }
 
         ECALL [[no_cont]] {
-            encoding: 0b000000000000 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
+            encoding: 12'b000000000000 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
                 raise(0, RV_CAUSE_USER_ECALL + PRIV);
             }
@@ -421,7 +421,7 @@ InstructionSet tum_csr extends Zicsr {
 InstructionSet tum_semihosting extends RV32I {
     instructions {
         EBREAK [[no_cont]] [[cond]] {
-            encoding: 0b000000000001 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
+            encoding: 12'b000000000001 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
                 if (etiss_semihost_enabled()) {
                     unsigned<XLEN> pc_m4 = (unsigned<XLEN>)(PC - 4);
