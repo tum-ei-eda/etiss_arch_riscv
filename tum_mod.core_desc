@@ -285,8 +285,8 @@ InstructionSet tum_csr extends Zicsr {
     architectural_state {
         unsigned<XLEN>& MSTATUS [[ etiss_is_global_irq_en=0xf ]] = CSR[RV_CSR_MSTATUS];
         unsigned<XLEN>& MIE [[ etiss_is_irq_en ]] = CSR[RV_CSR_MIE];
+        unsigned<XLEN>& MIP [[ etiss_is_irq_pending ]] = CSR[RV_CSR_MIP];
         // Aliases are available for ETISS GDBServer
-        unsigned<XLEN>& MIP = CSR[RV_CSR_MIP];
         unsigned<XLEN>& CYCLE = CSR[RV_CSR_CYCLE];
         unsigned<XLEN>& CYCLEH = CSR[RV_CSR_CYCLEH];
         unsigned<XLEN>& MCYCLE = CSR[RV_CSR_MCYCLE];
