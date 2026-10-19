@@ -43,7 +43,7 @@ InstructionSet tum_csr extends Zicsr {
         }
 
         unsigned<64> set_field(unsigned<64> reg, unsigned<64> mask, unsigned<64> val) {
-            return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
+            return (unsigned<64>)((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
         }
 
 
@@ -78,13 +78,13 @@ InstructionSet tum_csr extends Zicsr {
         unsigned<XLEN> csr_read(unsigned int csr) {
             if (csr == RV_CSR_FFLAGS) return CSR[RV_CSR_FCSR] & 0x1F;
             if (csr == RV_CSR_FRM) return (CSR[RV_CSR_FCSR] >> 5) & 0x07;
-            if (csr == RV_CSR_CYCLE) return etiss_get_cycles();
-            if (csr == RV_CSR_CYCLEH) return etiss_get_cycles() >> 32;
-            if (csr == RV_CSR_TIME) return etiss_get_time();
-            if (csr == RV_CSR_TIMEH) return etiss_get_time() >> 32;
-            if (csr == RV_CSR_INSTRET) return etiss_get_instret();
-            if (csr == RV_CSR_INSTRETH) return etiss_get_instret() >> 32;
-            if (csr == RV_CSR_MSTATUS || csr == RV_CSR_SSTATUS) return CSR[RV_CSR_MSTATUS] | (RV_MSTATUS_UXL & (RV_MSTATUS_UXL << 1)) | (RV_MSTATUS_SXL & (RV_MSTATUS_SXL << 1));
+            if (csr == RV_CSR_CYCLE) return (unsigned<XLEN>)etiss_get_cycles();
+            if (csr == RV_CSR_CYCLEH) return (unsigned<XLEN>)(etiss_get_cycles() >> 32);
+            if (csr == RV_CSR_TIME) return (unsigned<XLEN>)etiss_get_time();
+            if (csr == RV_CSR_TIMEH) return (unsigned<XLEN>)(etiss_get_time() >> 32);
+            if (csr == RV_CSR_INSTRET) return (unsigned<XLEN>)etiss_get_instret();
+            if (csr == RV_CSR_INSTRETH) return (unsigned<XLEN>)(etiss_get_instret() >> 32);
+            if (csr == RV_CSR_MSTATUS || csr == RV_CSR_SSTATUS) return (unsigned<XLEN>)(CSR[RV_CSR_MSTATUS] | (RV_MSTATUS_UXL & (RV_MSTATUS_UXL << 1)) | (RV_MSTATUS_SXL & (RV_MSTATUS_SXL << 1)));
             if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 3:0];
 
             return CSR[csr];
@@ -258,15 +258,15 @@ InstructionSet tum_ret extends tum_csr {
             int irq2 = (mcause & ((unsigned<XLEN>)1 << (XLEN - 1))) != 0;
 
             if (irq2) {
-                deleg = (PRIV <= RV_PRV_S) ? CSR[RV_CSR_MIDELEG] : 0;
-                bit &= ((unsigned<XLEN>)1 << (XLEN - 1)) - 1;
+                deleg = (unsigned<XLEN>)((PRIV <= RV_PRV_S) ? CSR[RV_CSR_MIDELEG] : 0);
+                bit &= (unsigned<XLEN>)(((unsigned<XLEN>)1 << (XLEN - 1)) - 1);
             } else {
-                deleg = (PRIV <= RV_PRV_S) ? CSR[RV_CSR_MEDELEG] : 0;
+                deleg = (unsigned<XLEN>)((PRIV <= RV_PRV_S) ? CSR[RV_CSR_MEDELEG] : 0);
             }
 
             if (PRIV <= RV_PRV_S && (deleg >> bit) & 1) { // handle in S-MODE
-                vector = (CSR[RV_CSR_STVEC] & 1) && irq2 ? bit * 4 : 0;
-                PC = (CSR[RV_CSR_STVEC] & ~(unsigned<XLEN>)1) + vector;
+                vector = (unsigned<XLEN>)((CSR[RV_CSR_STVEC] & 1) && irq2 ? bit * 4 : 0);
+                PC = (unsigned<XLEN>)((CSR[RV_CSR_STVEC] & ~(unsigned<XLEN>)1) + vector);
                 CSR[RV_CSR_SEPC] = epc;
                 CSR[RV_CSR_SCAUSE] = mcause;
 
@@ -278,8 +278,8 @@ InstructionSet tum_ret extends tum_csr {
                 PRIV = (unsigned<3>)RV_PRV_S;
 
             } else {    // handle in M-MODE
-                vector = (CSR[RV_CSR_MTVEC] & 1) && irq2 ? bit * 4 : 0;
-                PC = (CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1) + vector;
+                vector = (unsigned<XLEN>)((CSR[RV_CSR_MTVEC] & 1) && irq2 ? bit * 4 : 0);
+                PC = (unsigned<XLEN>)((CSR[RV_CSR_MTVEC] & ~(unsigned<XLEN>)1) + vector);
                 CSR[RV_CSR_MEPC] = epc;
                 CSR[RV_CSR_MCAUSE] = mcause;
 
@@ -317,13 +317,13 @@ InstructionSet tum_ret extends tum_csr {
 
             unsigned<XLEN> mie = (unsigned<XLEN>)get_field(CSR[RV_CSR_MSTATUS], RV_MSTATUS_MIE);
             unsigned<XLEN> m_enabled = PRIV < RV_PRV_M || (PRIV == RV_PRV_M && mie);
-            unsigned<XLEN> enabled_interrupts = pending_interrupts & ~CSR[RV_CSR_MIDELEG] & -m_enabled;
+            unsigned<XLEN> enabled_interrupts = (unsigned<XLEN>)(pending_interrupts & ~CSR[RV_CSR_MIDELEG] & -m_enabled);
 
             if (enabled_interrupts == 0) {
                 unsigned<XLEN> deleg = CSR[RV_CSR_MIDELEG];
                 unsigned<XLEN> sie = (unsigned<XLEN>)get_field(csr_read(RV_CSR_SSTATUS), RV_MSTATUS_SIE);
                 unsigned<XLEN> s_enabled = PRIV < RV_PRV_S || (PRIV == RV_PRV_S && sie);
-                enabled_interrupts = pending_interrupts & deleg & -s_enabled;
+                enabled_interrupts = (unsigned<XLEN>)(pending_interrupts & deleg & -s_enabled);
             }
 
             if (enabled_interrupts) {
@@ -386,7 +386,7 @@ InstructionSet tum_ret extends tum_csr {
 
                 s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MIE, get_field(s, RV_MSTATUS_MPIE));
                 s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPIE, 1);
-                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPP, extension_enabled('U') ? RV_PRV_U : RV_PRV_M);
+                s = (unsigned<XLEN>)set_field(s, RV_MSTATUS_MPP, (unsigned<64>)(extension_enabled('U') ? RV_PRV_U : RV_PRV_M));
 
                 csr_write(RV_CSR_MSTATUS, s);
                 PRIV = (unsigned<3>)prev_prv;
@@ -417,7 +417,7 @@ InstructionSet tum_ret extends tum_csr {
         ECALL [[no_cont]] {
             encoding: 12'b000000000000 :: 5'b00000 :: 3'b000 :: 5'b00000 :: 7'b1110011;
             behavior: {
-                raise(0, RV_CAUSE_USER_ECALL + PRIV);
+                raise(0, (unsigned<32>)(RV_CAUSE_USER_ECALL + PRIV));
             }
         }
 
@@ -461,7 +461,7 @@ InstructionSet tum_semihosting extends RV32I {
                     ) {
                     unsigned<XLEN> operation = X[10];
                     unsigned<XLEN> parameter = X[11];
-                    X[10] = (signed<XLEN>)etiss_semihost(XLEN, operation, parameter);
+                    X[10] = (unsigned<XLEN>)etiss_semihost(XLEN, operation, parameter);
                     } else {
                         raise(0, RV_CAUSE_BREAKPOINT);
                     }
