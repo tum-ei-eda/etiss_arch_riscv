@@ -1,7 +1,179 @@
 import "rv_base/RISCVBase.core_desc"
 import "rv_base/RVI.core_desc"
 
-InstructionSet tum_ret extends RISCVBase {
+InstructionSet tum_csr extends Zicsr {
+    architectural_state {
+        unsigned<XLEN>& MSTATUS [[ etiss_is_global_irq_en=0xf ]] = CSR[RV_CSR_MSTATUS];
+        unsigned<XLEN>& MIE [[ etiss_is_irq_en ]] = CSR[RV_CSR_MIE];
+        unsigned<XLEN>& MIP [[ etiss_is_irq_pending ]] = CSR[RV_CSR_MIP];
+        // Aliases are available for ETISS GDBServer
+        unsigned<XLEN>& CYCLE = CSR[RV_CSR_CYCLE];
+        unsigned<XLEN>& CYCLEH = CSR[RV_CSR_CYCLEH];
+        unsigned<XLEN>& MCYCLE = CSR[RV_CSR_MCYCLE];
+        unsigned<XLEN>& MCYCLEH = CSR[RV_CSR_MCYCLEH];
+        unsigned<XLEN>& TIME = CSR[RV_CSR_TIME];
+        unsigned<XLEN>& TIMEH = CSR[RV_CSR_TIMEH];
+        unsigned<XLEN>& INSTRET = CSR[RV_CSR_INSTRET];
+        unsigned<XLEN>& INSTRETH = CSR[RV_CSR_INSTRETH];
+        unsigned<XLEN>& MINSTRET = CSR[RV_CSR_MINSTRET];
+        unsigned<XLEN>& MINSTRETH = CSR[RV_CSR_MINSTRETH];
+        unsigned<XLEN>& MVENDORID = CSR[RV_CSR_MVENDORID];
+        unsigned<XLEN>& MARCHID = CSR[RV_CSR_MARCHID];
+        unsigned<XLEN>& MIMPID = CSR[RV_CSR_MIMPID];
+        unsigned<XLEN>& MHARTID = CSR[RV_CSR_MHARTID];
+        unsigned<XLEN>& MISA = CSR[RV_CSR_MISA];
+        unsigned<XLEN>& MEDELEG = CSR[RV_CSR_MEDELEG];
+        unsigned<XLEN>& MIDELEG = CSR[RV_CSR_MIDELEG];
+        unsigned<XLEN>& MTVEC = CSR[RV_CSR_MTVEC];
+        unsigned<XLEN>& MCOUNTEREN = CSR[RV_CSR_MCOUNTEREN];
+        unsigned<XLEN>& MSCRATCH = CSR[RV_CSR_MSCRATCH];
+        unsigned<XLEN>& MEPC = CSR[RV_CSR_MEPC];
+        unsigned<XLEN>& MCAUSE = CSR[RV_CSR_MCAUSE];
+        unsigned<XLEN>& MTVAL = CSR[RV_CSR_MTVAL];
+    }
+
+    functions {
+        extern unsigned<64> etiss_get_cycles() [[ etiss_needs_arch ]];
+        extern unsigned<64> etiss_get_time();
+        extern unsigned<64> etiss_get_instret() [[ etiss_needs_arch ]];
+
+        unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
+            if (!mask) return 0;
+            return (reg & mask) / (mask & ~(mask << 1));
+        }
+
+        unsigned<64> set_field(unsigned<64> reg, unsigned<64> mask, unsigned<64> val) {
+            return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
+        }
+
+
+        unsigned<XLEN> sstatus_mask() {
+            unsigned<XLEN> mask = 0;
+
+            if (extension_enabled('S')) {
+                mask |= 0 | (RV_MSTATUS_SIE | RV_MSTATUS_SPIE | RV_MSTATUS_SPP | RV_MSTATUS_MXR | RV_MSTATUS_TVM | RV_MSTATUS_TSR);
+
+                if (extension_enabled('V'))
+                    mask |= RV_MSTATUS_VS;
+
+                if (extension_enabled('F'))
+                    mask |= RV_MSTATUS_FS;
+
+                if (extension_enabled('X'))
+                    mask |= RV_MSTATUS_XS;
+
+                if ((XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31)) || (XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60)))
+                    mask |= RV_MSTATUS_SUM;
+            }
+
+            return mask;
+        }
+
+        unsigned<XLEN> mstatus_mask() {
+            unsigned<XLEN> mask = 0 | (RV_MSTATUS_MIE | RV_MSTATUS_MPIE | RV_MSTATUS_MPP);
+
+            return mask | sstatus_mask();
+        }
+
+        unsigned<XLEN> csr_read(unsigned int csr) {
+            if (csr == RV_CSR_FFLAGS) return CSR[RV_CSR_FCSR] & 0x1F;
+            if (csr == RV_CSR_FRM) return (CSR[RV_CSR_FCSR] >> 5) & 0x07;
+            if (csr == RV_CSR_CYCLE) return etiss_get_cycles();
+            if (csr == RV_CSR_CYCLEH) return etiss_get_cycles() >> 32;
+            if (csr == RV_CSR_TIME) return etiss_get_time();
+            if (csr == RV_CSR_TIMEH) return etiss_get_time() >> 32;
+            if (csr == RV_CSR_INSTRET) return etiss_get_instret();
+            if (csr == RV_CSR_INSTRETH) return etiss_get_instret() >> 32;
+            if (csr == RV_CSR_MSTATUS || csr == RV_CSR_SSTATUS) return CSR[RV_CSR_MSTATUS] | (RV_MSTATUS_UXL & (RV_MSTATUS_UXL << 1)) | (RV_MSTATUS_SXL & (RV_MSTATUS_SXL << 1));
+            if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 3:0];
+
+            return CSR[csr];
+        }
+
+        void csr_write(unsigned int csr, unsigned<XLEN> val) {
+            if (csr == RV_CSR_FFLAGS) CSR[RV_CSR_FCSR] = (CSR[RV_CSR_FCSR] & (0x07 << 5)) | (val & 0x1F);
+            else if (csr == RV_CSR_FRM) CSR[RV_CSR_FCSR] = ((val & 0x07) << 5) | (CSR[RV_CSR_FCSR] & 0x1F);
+            else if (csr == RV_CSR_FCSR) CSR[RV_CSR_FCSR] = val & 0xFF;
+            else if (csr == RV_CSR_MSTATUS) CSR[RV_CSR_MSTATUS] = val & mstatus_mask();
+            else if (csr == RV_CSR_SSTATUS) CSR[RV_CSR_MSTATUS] = val & sstatus_mask();
+
+            else if (csr != RV_CSR_MISA) CSR[csr] = val;
+        }
+    }
+
+    instructions {
+        CSRRW {
+            encoding: csr[11:0] :: rs1[4:0] :: 3'b001 :: rd[4:0] :: 7'b1110011;
+            assembly:"{name(rd)}, {csr}, {name(rs1)}";
+            behavior: {
+                unsigned<XLEN> xrs1 = X[rs1 % RFS];
+                if ((rd % RFS) != 0) {
+                    unsigned<XLEN> xrd = csr_read(csr);
+                    csr_write(csr, xrs1);
+                    // make sure Xrd is updated once CSR write succeeds
+                    X[rd % RFS] = xrd;
+                } else {
+                    csr_write(csr, xrs1);
+                }
+            }
+        }
+
+        CSRRS {
+            encoding: csr[11:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1110011;
+            assembly:"{name(rd)}, {csr}, {name(rs1)}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                unsigned<XLEN> xrs1 = X[rs1 % RFS];
+                if (rs1 != 0) csr_write(csr, xrd | xrs1);
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
+            }
+        }
+
+        CSRRC {
+            encoding: csr[11:0] :: rs1[4:0] :: 3'b011 :: rd[4:0] :: 7'b1110011;
+            assembly:"{name(rd)}, {csr}, {name(rs1)}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                unsigned<XLEN> xrs1 = X[rs1 % RFS];
+                if (rs1 != 0) csr_write(csr, xrd & ~xrs1);
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
+            }
+        }
+
+        CSRRWI {
+            encoding: csr[11:0] :: zimm[4:0] :: 3'b101 :: rd[4:0] :: 7'b1110011;
+            assembly:"{name(rd)}, {csr}, {zimm:#0x}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                csr_write(csr, (unsigned<XLEN>)zimm);
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
+            }
+        }
+
+        CSRRSI {
+            encoding: csr[11:0] :: zimm[4:0] :: 3'b110 :: rd[4:0] :: 7'b1110011;
+            assembly:"{name(rd)}, {csr}, {zimm:#0x}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                if (zimm != 0) csr_write(csr, xrd | (unsigned<XLEN>)zimm);
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
+            }
+        }
+
+        CSRRCI {
+            encoding: csr[11:0] :: zimm[4:0] :: 3'b111 :: rd[4:0] :: 7'b1110011;
+            assembly:"{name(rd)}, {csr}, {zimm:#0x}";
+            behavior: {
+                unsigned<XLEN> xrd = csr_read(csr);
+                if (zimm != 0) csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
+                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
+            }
+        }
+    }
+}
+
+
+InstructionSet tum_ret extends tum_csr {
     architectural_state {
         signed<32> ETISS_RETURNCODE_NOERROR = 0;
         signed<32> ETISS_RETURNCODE_GENERALERROR = -1;
@@ -40,15 +212,6 @@ InstructionSet tum_ret extends RISCVBase {
     }
 
     functions {
-        unsigned<64> get_field(unsigned<64> reg, unsigned<64> mask) {
-            if (!mask) return 0;
-            return (reg & mask) / (mask & ~(mask << 1));
-        }
-
-        unsigned<64> set_field(unsigned<64> reg, unsigned<64> mask, unsigned<64> val) {
-            return ((reg & ~mask) | ((val * (mask & ~(mask << 1))) & mask));
-        }
-
         unsigned<8> ctz(unsigned<64> val) {
             if (!val)
                 return 0;
@@ -278,167 +441,6 @@ InstructionSet tum_ret extends RISCVBase {
             check_irq();
         }
         */
-    }
-}
-
-InstructionSet tum_csr extends Zicsr {
-    architectural_state {
-        unsigned<XLEN>& MSTATUS [[ etiss_is_global_irq_en=0xf ]] = CSR[RV_CSR_MSTATUS];
-        unsigned<XLEN>& MIE [[ etiss_is_irq_en ]] = CSR[RV_CSR_MIE];
-        unsigned<XLEN>& MIP [[ etiss_is_irq_pending ]] = CSR[RV_CSR_MIP];
-        // Aliases are available for ETISS GDBServer
-        unsigned<XLEN>& CYCLE = CSR[RV_CSR_CYCLE];
-        unsigned<XLEN>& CYCLEH = CSR[RV_CSR_CYCLEH];
-        unsigned<XLEN>& MCYCLE = CSR[RV_CSR_MCYCLE];
-        unsigned<XLEN>& MCYCLEH = CSR[RV_CSR_MCYCLEH];
-        unsigned<XLEN>& TIME = CSR[RV_CSR_TIME];
-        unsigned<XLEN>& TIMEH = CSR[RV_CSR_TIMEH];
-        unsigned<XLEN>& INSTRET = CSR[RV_CSR_INSTRET];
-        unsigned<XLEN>& INSTRETH = CSR[RV_CSR_INSTRETH];
-        unsigned<XLEN>& MINSTRET = CSR[RV_CSR_MINSTRET];
-        unsigned<XLEN>& MINSTRETH = CSR[RV_CSR_MINSTRETH];
-        unsigned<XLEN>& MVENDORID = CSR[RV_CSR_MVENDORID];
-        unsigned<XLEN>& MARCHID = CSR[RV_CSR_MARCHID];
-        unsigned<XLEN>& MIMPID = CSR[RV_CSR_MIMPID];
-        unsigned<XLEN>& MHARTID = CSR[RV_CSR_MHARTID];
-        unsigned<XLEN>& MISA = CSR[RV_CSR_MISA];
-        unsigned<XLEN>& MEDELEG = CSR[RV_CSR_MEDELEG];
-        unsigned<XLEN>& MIDELEG = CSR[RV_CSR_MIDELEG];
-        unsigned<XLEN>& MTVEC = CSR[RV_CSR_MTVEC];
-        unsigned<XLEN>& MCOUNTEREN = CSR[RV_CSR_MCOUNTEREN];
-        unsigned<XLEN>& MSCRATCH = CSR[RV_CSR_MSCRATCH];
-        unsigned<XLEN>& MEPC = CSR[RV_CSR_MEPC];
-        unsigned<XLEN>& MCAUSE = CSR[RV_CSR_MCAUSE];
-        unsigned<XLEN>& MTVAL = CSR[RV_CSR_MTVAL];
-    }
-
-    functions {
-        extern unsigned<64> etiss_get_cycles() [[ etiss_needs_arch ]];
-        extern unsigned<64> etiss_get_time();
-        extern unsigned<64> etiss_get_instret() [[ etiss_needs_arch ]];
-
-        unsigned<XLEN> sstatus_mask() {
-            unsigned<XLEN> mask = 0;
-
-            if (extension_enabled('S')) {
-                mask |= 0 | (RV_MSTATUS_SIE | RV_MSTATUS_SPIE | RV_MSTATUS_SPP | RV_MSTATUS_MXR | RV_MSTATUS_TVM | RV_MSTATUS_TSR);
-
-                if (extension_enabled('V'))
-                    mask |= RV_MSTATUS_VS;
-
-                if (extension_enabled('F'))
-                    mask |= RV_MSTATUS_FS;
-
-                if (extension_enabled('X'))
-                    mask |= RV_MSTATUS_XS;
-
-                if ((XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31)) || (XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60)))
-                    mask |= RV_MSTATUS_SUM;
-            }
-
-            return mask;
-        }
-
-        unsigned<XLEN> mstatus_mask() {
-            unsigned<XLEN> mask = 0 | (RV_MSTATUS_MIE | RV_MSTATUS_MPIE | RV_MSTATUS_MPP);
-
-            return mask | sstatus_mask();
-        }
-
-        unsigned<XLEN> csr_read(unsigned int csr) {
-            if (csr == RV_CSR_FFLAGS) return CSR[RV_CSR_FCSR] & 0x1F;
-            if (csr == RV_CSR_FRM) return (CSR[RV_CSR_FCSR] >> 5) & 0x07;
-            if (csr == RV_CSR_CYCLE) return etiss_get_cycles();
-            if (csr == RV_CSR_CYCLEH) return etiss_get_cycles() >> 32;
-            if (csr == RV_CSR_TIME) return etiss_get_time();
-            if (csr == RV_CSR_TIMEH) return etiss_get_time() >> 32;
-            if (csr == RV_CSR_INSTRET) return etiss_get_instret();
-            if (csr == RV_CSR_INSTRETH) return etiss_get_instret() >> 32;
-            if (csr == RV_CSR_MSTATUS || csr == RV_CSR_SSTATUS) return CSR[RV_CSR_MSTATUS] | (RV_MSTATUS_UXL & (RV_MSTATUS_UXL << 1)) | (RV_MSTATUS_SXL & (RV_MSTATUS_SXL << 1));
-            if (csr == RV_CSR_MISA) return (unsigned<2>)(XLEN / 32) :: CSR[RV_CSR_MISA][XLEN - 3:0];
-
-            return CSR[csr];
-        }
-
-        void csr_write(unsigned int csr, unsigned<XLEN> val) {
-            if (csr == RV_CSR_FFLAGS) CSR[RV_CSR_FCSR] = (CSR[RV_CSR_FCSR] & (0x07 << 5)) | (val & 0x1F);
-            else if (csr == RV_CSR_FRM) CSR[RV_CSR_FCSR] = ((val & 0x07) << 5) | (CSR[RV_CSR_FCSR] & 0x1F);
-            else if (csr == RV_CSR_FCSR) CSR[RV_CSR_FCSR] = val & 0xFF;
-            else if (csr == RV_CSR_MSTATUS) CSR[RV_CSR_MSTATUS] = val & mstatus_mask();
-            else if (csr == RV_CSR_SSTATUS) CSR[RV_CSR_MSTATUS] = val & sstatus_mask();
-
-            else if (csr != RV_CSR_MISA) CSR[csr] = val;
-        }
-    }
-
-    instructions {
-        CSRRW {
-            encoding: csr[11:0] :: rs1[4:0] :: 3'b001 :: rd[4:0] :: 7'b1110011;
-            assembly:"{name(rd)}, {csr}, {name(rs1)}";
-            behavior: {
-                unsigned<XLEN> xrs1 = X[rs1 % RFS];
-                if ((rd % RFS) != 0) {
-                    unsigned<XLEN> xrd = csr_read(csr);
-                    csr_write(csr, xrs1);
-                    // make sure Xrd is updated once CSR write succeeds
-                    X[rd % RFS] = xrd;
-                } else {
-                    csr_write(csr, xrs1);
-                }
-            }
-        }
-
-        CSRRS {
-            encoding: csr[11:0] :: rs1[4:0] :: 3'b010 :: rd[4:0] :: 7'b1110011;
-            assembly:"{name(rd)}, {csr}, {name(rs1)}";
-            behavior: {
-                unsigned<XLEN> xrd = csr_read(csr);
-                unsigned<XLEN> xrs1 = X[rs1 % RFS];
-                if (rs1 != 0) csr_write(csr, xrd | xrs1);
-                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
-            }
-        }
-
-        CSRRC {
-            encoding: csr[11:0] :: rs1[4:0] :: 3'b011 :: rd[4:0] :: 7'b1110011;
-            assembly:"{name(rd)}, {csr}, {name(rs1)}";
-            behavior: {
-                unsigned<XLEN> xrd = csr_read(csr);
-                unsigned<XLEN> xrs1 = X[rs1 % RFS];
-                if (rs1 != 0) csr_write(csr, xrd & ~xrs1);
-                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
-            }
-        }
-
-        CSRRWI {
-            encoding: csr[11:0] :: zimm[4:0] :: 3'b101 :: rd[4:0] :: 7'b1110011;
-            assembly:"{name(rd)}, {csr}, {zimm:#0x}";
-            behavior: {
-                unsigned<XLEN> xrd = csr_read(csr);
-                csr_write(csr, (unsigned<XLEN>)zimm);
-                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
-            }
-        }
-
-        CSRRSI {
-            encoding: csr[11:0] :: zimm[4:0] :: 3'b110 :: rd[4:0] :: 7'b1110011;
-            assembly:"{name(rd)}, {csr}, {zimm:#0x}";
-            behavior: {
-                unsigned<XLEN> xrd = csr_read(csr);
-                if (zimm != 0) csr_write(csr, xrd | (unsigned<XLEN>)zimm);
-                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
-            }
-        }
-
-        CSRRCI {
-            encoding: csr[11:0] :: zimm[4:0] :: 3'b111 :: rd[4:0] :: 7'b1110011;
-            assembly:"{name(rd)}, {csr}, {zimm:#0x}";
-            behavior: {
-                unsigned<XLEN> xrd = csr_read(csr);
-                if (zimm != 0) csr_write(csr, xrd & ~((unsigned<XLEN>)zimm));
-                if ((rd % RFS) != 0) X[rd % RFS] = xrd;
-            }
-        }
     }
 }
 
