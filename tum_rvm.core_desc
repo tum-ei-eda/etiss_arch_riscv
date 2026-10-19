@@ -3,17 +3,17 @@ import "rv_base/RVM.core_desc"
 InstructionSet tum_rvm extends RV32M {
     functions {
         signed<XLEN> mulh(signed<XLEN> x, signed<XLEN> y) {
-            signed<MUL_LEN> res = (signed<MUL_LEN>)x * (signed<MUL_LEN>)y;
+            signed<MUL_LEN> res = (signed<XLEN>)x * (signed<XLEN>)y;
             return (signed<XLEN>)(res >> XLEN);
         }
 
         signed<XLEN> mulhsu(signed<XLEN> x, unsigned<XLEN>y) {
-            signed<MUL_LEN> res = (signed<MUL_LEN>)x * (unsigned<MUL_LEN>)y;
+            signed<MUL_LEN> res = (signed<XLEN>)x * (unsigned<XLEN>)y;
             return (signed<XLEN>)(res >> XLEN);
         }
 
         unsigned<XLEN> mulhu(unsigned<XLEN> x, unsigned<XLEN>y) {
-            unsigned<MUL_LEN> res = (unsigned<MUL_LEN>)x * (unsigned<MUL_LEN>)y;
+            unsigned<MUL_LEN> res = (unsigned<XLEN>)x * (unsigned<XLEN>)y;
             return (unsigned<XLEN>)(res >> XLEN);
         }
     }
@@ -24,7 +24,7 @@ InstructionSet tum_rvm extends RV32M {
             assembly:"{name(rd)}, {name(rs1)}, {name(rs2)}";
             behavior: {
                 if ((rd % RFS) != 0) {
-                    signed<XLEN> res = (signed)X[rs1 % RFS] * (signed)X[rs2 % RFS];
+                    signed<XLEN> res = (signed<XLEN>)((signed<XLEN>)X[rs1 % RFS] * (signed<XLEN>)X[rs2 % RFS]);
                     X[rd % RFS] = (unsigned<XLEN>)res;
                 }
             }
@@ -35,7 +35,7 @@ InstructionSet tum_rvm extends RV32M {
             assembly:"{name(rd)}, {name(rs1)}, {name(rs2)}";
             behavior: {
                 if ((rd % RFS) != 0) {
-                    X[rd % RFS] = mulh((signed)X[rs1 % RFS], (signed)X[rs2 % RFS]);
+                    X[rd % RFS] = (unsigned<XLEN>)mulh((signed<XLEN>)X[rs1 % RFS], (signed<XLEN>)X[rs2 % RFS]);
                 }
             }
         }
@@ -45,7 +45,7 @@ InstructionSet tum_rvm extends RV32M {
             assembly:"{name(rd)}, {name(rs1)}, {name(rs2)}";
             behavior: {
                 if ((rd % RFS) != 0) {
-                    X[rd % RFS] = mulhsu((signed)X[rs1 % RFS], X[rs2 % RFS]);
+                    X[rd % RFS] = (unsigned<XLEN>)mulhsu((signed<XLEN>)X[rs1 % RFS], (unsigned<XLEN>)X[rs2 % RFS]);
                 }
             }
         }
