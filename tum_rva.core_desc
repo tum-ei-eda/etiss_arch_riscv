@@ -2,7 +2,7 @@ import "rv_base/RVA.core_desc"
 
 InstructionSet tum_rva extends RV32A {
     architectural_state {
-        register unsigned<XLEN> RES_ADDR = -1;
+        register signed<XLEN> RES_ADDR = -1;
     }
 
     instructions {
@@ -12,8 +12,8 @@ InstructionSet tum_rva extends RV32A {
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
                 signed<32> res = (signed<32>)MEM[offs+3:offs];
-                RES_ADDR = offs;
-                if (rd) X[rd % RFS] = (signed<XLEN>)res;
+                RES_ADDR = (signed<XLEN>)offs;
+                if (rd) X[rd % RFS] = (unsigned<XLEN>)res;
             }
         }
 
@@ -22,9 +22,9 @@ InstructionSet tum_rva extends RV32A {
             assembly: "{name(rd)}, {name(rs1)}, {name(rs2)}, {name(aq)}, {name(rl)}";
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
-                if (RES_ADDR == offs) MEM[offs+3:offs] = (signed<32>)X[rs2 % RFS];
+                if (RES_ADDR == (signed<XLEN>)offs) MEM[offs+3:offs] = (unsigned<32>)X[rs2 % RFS];
                 if (rd) X[rd % RFS] = (unsigned<XLEN>)(unsigned<1>)(RES_ADDR != offs);
-                RES_ADDR = (unsigned)(signed<XLEN>)(-1);
+                RES_ADDR = -1;
             }
         }
     }
@@ -38,8 +38,8 @@ InstructionSet tum_rva64 extends tum_rva {
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
                 signed<64> res = (signed<64>)MEM[offs+7:offs];
-                RES_ADDR = offs;
-                if (rd) X[rd % RFS] = (signed<XLEN>)res;
+                RES_ADDR = (signed<XLEN>)offs;
+                if (rd) X[rd % RFS] = (unsigned<XLEN>)res;
             }
         }
 
@@ -48,9 +48,9 @@ InstructionSet tum_rva64 extends tum_rva {
             assembly: "{name(rd)}, {name(rs1)}, {name(rs2)}, {name(aq)}, {name(rl)}";
             behavior: {
                 unsigned<XLEN> offs = X[rs1 % RFS];
-                if (RES_ADDR == offs) MEM[offs+7:offs] = (signed<64>)X[rs2 % RFS];
+                if (RES_ADDR == (signed<XLEN>)offs) MEM[offs+7:offs] = (unsigned<64>)X[rs2 % RFS];
                 if (rd) X[rd % RFS] = (unsigned<XLEN>)(unsigned<1>)(RES_ADDR != offs);
-                RES_ADDR = (unsigned)(signed<XLEN>)(-1);
+                RES_ADDR = -1;
             }
         }
     }
