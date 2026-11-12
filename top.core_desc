@@ -19,8 +19,8 @@ Core RV32IMACFD provides RV32I, RV32IC, RV32M, RV32F, RV32FC, RV32D, RV32DC, Zif
         CSR[0xC10] = 0x00000003;
 
         CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
-        CSR[RV_CSR_SIE] = CSR[0x304] & 0xFFFFFFFFFFFFF777; // sie
-        CSR[0x004] = CSR[0x304] & 0xFFFFFFFFFFFFF555; // uie
+        CSR[RV_CSR_SIE] = (unsigned<XLEN>)(CSR[0x304] & 0xFFFFFFFFFFFFF777); // sie
+        CSR[0x004] = (unsigned<XLEN>)(CSR[0x304] & 0xFFFFFFFFFFFFF555); // uie
     }
 }
 
@@ -35,7 +35,7 @@ Core RV64IMACFD provides RV64I, RV64IC, RV64M, RV64F, RV64D, RV32DC, RV64A, Zife
         CSR[0xC10] = 0x00000003;
 
         CSR[RV_CSR_MIE] = 0xFFFFFBBB; // mie
-        CSR[RV_CSR_SIE] = CSR[0x304] & 0xFFFFFFFFFFFFF777; // sie
-        CSR[0x004] = CSR[0x304] & 0xFFFFFFFFFFFFF555; // uie
+        CSR[RV_CSR_SIE] = (unsigned<XLEN>)(CSR[0x304] & 0xFFFFFFFFFFFFF777); // sie
+        CSR[0x004] = (unsigned<XLEN>)(CSR[0x304] & 0xFFFFFFFFFFFFF555); // uie
     }
 }
