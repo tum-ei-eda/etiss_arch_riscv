@@ -62,7 +62,7 @@ InstructionSet tum_csr extends Zicsr {
                 if (extension_enabled('X'))
                     mask |= RV_MSTATUS_XS;
 
-                if ((XLEN == 32 && get_field(CSR[RV_CSR_SATP], 1 << 31)) || (XLEN == 64 && get_field(CSR[RV_CSR_SATP], 15 << 60)))
+                if ((XLEN == 32 && get_field(CSR[RV_CSR_SATP], (unsigned<XLEN>)1 << 31)) || (XLEN == 64 && get_field(CSR[RV_CSR_SATP], (unsigned<64>)15 << 60)))
                     mask |= RV_MSTATUS_SUM;
             }
 
@@ -91,7 +91,7 @@ InstructionSet tum_csr extends Zicsr {
         }
 
         void csr_write(unsigned int csr, unsigned<XLEN> val) {
-            if (csr == RV_CSR_FFLAGS) CSR[RV_CSR_FCSR] = (CSR[RV_CSR_FCSR] & (0x07 << 5)) | (val & 0x1F);
+            if (csr == RV_CSR_FFLAGS) CSR[RV_CSR_FCSR] = (CSR[RV_CSR_FCSR] & ((unsigned<XLEN>)0x07 << 5)) | (val & 0x1F);
             else if (csr == RV_CSR_FRM) CSR[RV_CSR_FCSR] = ((val & 0x07) << 5) | (CSR[RV_CSR_FCSR] & 0x1F);
             else if (csr == RV_CSR_FCSR) CSR[RV_CSR_FCSR] = val & 0xFF;
             else if (csr == RV_CSR_MSTATUS) CSR[RV_CSR_MSTATUS] = val & mstatus_mask();
@@ -194,7 +194,7 @@ InstructionSet tum_ret extends tum_csr {
         signed<32> ETISS_RETURNCODE_SYSCALL = -17;
         signed<32> ETISS_RETURNCODE_PAGEFAULT = -18;
         signed<32> ETISS_RETURNCODE_BREAKPOINT = -19;
-        signed<32> ETISS_RETURNCODE_CPUFINISHED = 1 << 31;
+        signed<32> ETISS_RETURNCODE_CPUFINISHED = 32'sb1 << 31;
         signed<32> ETISS_RETURNCODE_CPUTERMINATED = -2147483647;
         signed<32> ETISS_RETURNCODE_JITERROR = -32;
         signed<32> ETISS_RETURNCODE_JITCOMPILATIONERROR = -33;
